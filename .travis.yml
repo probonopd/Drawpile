@@ -17,8 +17,8 @@ script:
   - git clone git://anongit.kde.org/extra-cmake-modules
   - cd extra-cmake-modules
   - mkdir build && cd build    
-  - cmake .. -j$(nproc)
-  - make && sudo make install
+  - cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+  - make -j$(nproc) && sudo make install
   - cd ../../
   # Compile Drawpile
   - cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
