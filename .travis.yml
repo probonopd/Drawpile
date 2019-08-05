@@ -12,6 +12,15 @@ install:
   - source /opt/qt*/bin/qt*-env.sh
 
 script:
+
+  # Work around "Could not find a package configuration file provided by 'ECM'"
+  - git clone git://anongit.kde.org/extra-cmake-modules
+  - cd extra-cmake-modules
+  - mkdir build && cd build    
+  - cmake .. -j$(nproc)
+  - make && sudo make install
+  - cd ../../
+  # Compile Drawpile
   - cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
   - make -j$(nproc)
   - make DESTDIR=appdir -j$(nproc) install ; find appdir/
