@@ -36,6 +36,7 @@ QStringList dataPaths()
 #else
 	datapaths << QStandardPaths::writableLocation(QStandardPaths::DataLocation);
 	datapaths << QDir(qApp->applicationDirPath() + QStringLiteral("/../Resources")).absolutePath();
+	datapaths << qApp->applicationDirPath() + "../share/drawpile";
 #endif
 	return datapaths;
 }
