@@ -21,7 +21,7 @@ script:
   - cd ../../
   # Compile Drawpile
   - sed -i -e 's/zip.errorString()/QString("ZIP error")/g' "src/libclient/ora/orawriter.cpp"
-  - sed -i -e 's/zf.errorString()/QString("ZIP error")/g' "$src/libclient/ora/orawriter.cpp"
+  - sed -i -e 's/zf.errorString()/QString("ZIP error")/g' "src/libclient/ora/orawriter.cpp"
   - cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
   - make -j$(nproc)
   - make DESTDIR=appdir -j$(nproc) install ; find appdir/
