@@ -21,20 +21,20 @@
 
 #include <QWidget>
 
+#ifdef DESIGNER_PLUGIN
+#include <QtUiPlugin/QDesignerExportWidget>
+#else
+#define QDESIGNER_WIDGET_EXPORT
+#endif
+
 class QComboBox;
 class QPushButton;
 class QStringListModel;
 class QDir;
 
-#ifndef DESIGNER_PLUGIN
 namespace widgets {
-#define PLUGIN_EXPORT
-#else
-#include <QtUiPlugin/QDesignerExportWidget>
-#define PLUGIN_EXPORT QDESIGNER_WIDGET_EXPORT
-#endif
 
-class PLUGIN_EXPORT PresetSelector : public QWidget {
+class QDESIGNER_WIDGET_EXPORT PresetSelector : public QWidget {
 	Q_OBJECT
 	Q_PROPERTY(QString presetFolder READ presetFolder WRITE setPresetFolder)
 	Q_PROPERTY(bool writeOnly READ writeOnly WRITE setWriteOnly)
@@ -51,17 +51,18 @@ public slots:
 
 signals:
 	void saveRequested(const QString &path);
-	void presetSelected(const QString &path);
+	void loadRequested(const QString &path);
 
 private slots:
+	void onLoadClicked();
 	void onSaveClicked();
 	void onTextChanged(const QString &text);
-	void onCurrentIndexChanged(const QString &text);
 
 private:
 	QDir dir() const;
 
 	QComboBox *m_presetBox;
+	QPushButton *m_loadButton;
 	QPushButton *m_saveButton;
 	QPushButton *m_deleteButton;
 
@@ -71,9 +72,7 @@ private:
 	bool m_writeOnly;
 };
 
-#ifndef DESIGNER_PLUGIN
 }
-#endif
 
 #endif
 
