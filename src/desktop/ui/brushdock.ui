@@ -50,7 +50,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="GroupedToolButton" name="slot1">
+         <widget class="widgets::GroupedToolButton" name="slot1">
           <property name="text">
            <string notr="true">1</string>
           </property>
@@ -64,12 +64,12 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupLeft</enum>
+           <enum>widgets::GroupedToolButton::GroupLeft</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="GroupedToolButton" name="slot2">
+         <widget class="widgets::GroupedToolButton" name="slot2">
           <property name="text">
            <string notr="true">2</string>
           </property>
@@ -80,12 +80,12 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupCenter</enum>
+           <enum>widgets::GroupedToolButton::GroupCenter</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="GroupedToolButton" name="slot3">
+         <widget class="widgets::GroupedToolButton" name="slot3">
           <property name="text">
            <string notr="true">3</string>
           </property>
@@ -96,12 +96,12 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupCenter</enum>
+           <enum>widgets::GroupedToolButton::GroupCenter</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="GroupedToolButton" name="slot4">
+         <widget class="widgets::GroupedToolButton" name="slot4">
           <property name="text">
            <string notr="true">4</string>
           </property>
@@ -112,12 +112,12 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupCenter</enum>
+           <enum>widgets::GroupedToolButton::GroupCenter</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="GroupedToolButton" name="slot5">
+         <widget class="widgets::GroupedToolButton" name="slot5">
           <property name="text">
            <string notr="true">5</string>
           </property>
@@ -128,16 +128,16 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupCenter</enum>
+           <enum>widgets::GroupedToolButton::GroupCenter</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="GroupedToolButton" name="slotEraser">
-           <property name="icon">
-            <iconset theme="draw-eraser">
-              <normaloff>theme:draw-eraser.svg</normaloff>theme:draw-eraser.svg</iconset>
-           </property>
+         <widget class="widgets::GroupedToolButton" name="slotEraser">
+          <property name="icon">
+           <iconset theme="draw-eraser">
+            <normaloff>theme:draw-eraser.svg</normaloff>theme:draw-eraser.svg</iconset>
+          </property>
           <property name="checkable">
            <bool>true</bool>
           </property>
@@ -145,7 +145,7 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupRight</enum>
+           <enum>widgets::GroupedToolButton::GroupRight</enum>
           </property>
          </widget>
         </item>
@@ -168,7 +168,7 @@
     </layout>
    </item>
    <item>
-    <widget class="BrushPreview" name="preview">
+    <widget class="widgets::BrushPreview" name="preview">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -210,13 +210,13 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="GroupedToolButton" name="hardedgeMode">
+         <widget class="widgets::GroupedToolButton" name="hardedgeMode">
           <property name="toolTip">
-           <string>Pen</string>
+           <string>Pixel brush</string>
           </property>
           <property name="icon">
-           <iconset theme="draw-freehand">
-            <normaloff>theme:draw-freehand.svg</normaloff>theme:draw-freehand.svg</iconset>
+           <iconset theme="drawpile_pixelround">
+            <normaloff>theme:drawpile_pixelround.svg</normaloff>theme:drawpile_pixelround.svg</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -225,18 +225,38 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupLeft</enum>
+           <enum>widgets::GroupedToolButton::GroupLeft</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="GroupedToolButton" name="softedgeMode">
+         <widget class="widgets::GroupedToolButton" name="squareMode">
+          <property name="toolTip">
+           <string>Square pixel brush</string>
+          </property>
+          <property name="icon">
+           <iconset theme="drawpile_square">
+            <normaloff>theme:drawpile_square.svg</normaloff>theme:drawpile_square.svg</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+          <property name="groupPosition">
+           <enum>widgets::GroupedToolButton::GroupCenter</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="widgets::GroupedToolButton" name="softedgeMode">
           <property name="toolTip">
            <string>Brush</string>
           </property>
           <property name="icon">
-           <iconset theme="draw-brush">
-            <normaloff>theme:draw-brush.svg</normaloff>theme:draw-brush.svg</iconset>
+           <iconset theme="drawpile_round">
+            <normaloff>theme:drawpile_round.svg</normaloff>theme:drawpile_round.svg</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -245,45 +265,11 @@
            <bool>true</bool>
           </property>
           <property name="groupPosition">
-           <enum>GroupedToolButton::GroupCenter</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="GroupedToolButton" name="watercolorMode">
-          <property name="toolTip">
-           <string>Watercolor</string>
-          </property>
-          <property name="icon">
-           <iconset theme="draw-watercolor">
-            <normaloff>theme:draw-watercolor.svg</normaloff>theme:draw-watercolor.svg</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
-          <property name="groupPosition">
-           <enum>GroupedToolButton::GroupRight</enum>
+           <enum>widgets::GroupedToolButton::GroupRight</enum>
           </property>
          </widget>
         </item>
        </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="GroupedToolButton" name="modeEraser">
-       <property name="toolTip">
-        <string>Eraser mode</string>
-       </property>
-       <property name="icon">
-        <iconset theme="draw-eraser">
-          <normaloff>theme:draw-eraser.svg</normaloff>theme:draw-eraser.svg</iconset>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
       </widget>
      </item>
      <item>
@@ -300,67 +286,48 @@
       </spacer>
      </item>
      <item>
-      <widget class="QWidget" name="modeContainer" native="true">
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QComboBox" name="blendmode"/>
-        </item>
-        <item>
-         <widget class="GroupedToolButton" name="modeIncremental">
-          <property name="toolTip">
-           <string>Direct drawing mode</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>builtin:paintmode-incremental.svg</normaloff>builtin:paintmode-incremental.svg</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
-          <property name="groupPosition">
-           <enum>GroupedToolButton::GroupLeft</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="GroupedToolButton" name="modeIndirect">
-          <property name="toolTip">
-           <string>Indirect drawing mode</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>builtin:paintmode-indirect.svg</normaloff>builtin:paintmode-indirect.svg</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
-          <property name="groupPosition">
-           <enum>GroupedToolButton::GroupRight</enum>
-          </property>
-         </widget>
-        </item>
-       </layout>
+      <widget class="widgets::GroupedToolButton" name="modeColorpick">
+       <property name="toolTip">
+        <string>Pick initial color from layer</string>
+       </property>
+       <property name="icon">
+        <iconset theme="color-picker">
+         <normaloff>theme:color-picker.svg</normaloff>theme:color-picker.svg</iconset>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="widgets::GroupedToolButton" name="modeEraser">
+       <property name="toolTip">
+        <string>Eraser mode</string>
+       </property>
+       <property name="icon">
+        <iconset theme="draw-eraser">
+         <normaloff>theme:draw-eraser.svg</normaloff>theme:draw-eraser.svg</iconset>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="blendmode"/>
+     </item>
+     <item>
+      <widget class="widgets::GroupedToolButton" name="modeIncremental">
+       <property name="toolTip">
+        <string>Direct drawing mode</string>
+       </property>
+       <property name="icon">
+        <iconset theme="drawpile_incremental_mode">
+         <normaloff>theme:drawpile_incremental_mode.svg</normaloff>theme:drawpile_incremental_mode.svg</iconset>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
     </layout>
@@ -389,7 +356,7 @@
      <item row="4" column="2">
       <widget class="QSpinBox" name="colorpickupBox">
        <property name="prefix">
-        <string>1/</string>
+        <string notr="true">1/</string>
        </property>
        <property name="minimum">
         <number>1</number>
@@ -400,7 +367,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QSlider" name="brushsize">
+      <widget class="QSlider" name="brushsizeSlider">
        <property name="minimum">
         <number>1</number>
        </property>
@@ -413,7 +380,7 @@
       </widget>
      </item>
      <item row="0" column="2">
-      <widget class="QSpinBox" name="spinBox">
+      <widget class="QSpinBox" name="brushsizeBox">
        <property name="suffix">
         <string>px</string>
        </property>
@@ -421,7 +388,7 @@
         <number>1</number>
        </property>
        <property name="maximum">
-        <number>128</number>
+        <number>255</number>
        </property>
       </widget>
      </item>
@@ -515,10 +482,13 @@
      <item row="3" column="1">
       <widget class="QSlider" name="brushsmudging">
        <property name="minimum">
-        <number>1</number>
+        <number>0</number>
        </property>
        <property name="maximum">
         <number>100</number>
+       </property>
+       <property name="value">
+        <number>0</number>
        </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -531,10 +501,13 @@
         <string notr="true">%</string>
        </property>
        <property name="minimum">
-        <number>1</number>
+        <number>0</number>
        </property>
        <property name="maximum">
         <number>100</number>
+       </property>
+       <property name="value">
+        <number>0</number>
        </property>
       </widget>
      </item>
@@ -546,7 +519,7 @@
       </widget>
      </item>
      <item row="5" column="1">
-      <widget class="QSlider" name="brushspacing">
+      <widget class="QSlider" name="brushspacingSlider">
        <property name="minimum">
         <number>1</number>
        </property>
@@ -559,7 +532,7 @@
       </widget>
      </item>
      <item row="5" column="2">
-      <widget class="QSpinBox" name="spinBox_4">
+      <widget class="QSpinBox" name="brushspacingBox">
        <property name="suffix">
         <string notr="true">%</string>
        </property>
@@ -567,7 +540,7 @@
         <number>1</number>
        </property>
        <property name="maximum">
-        <number>50</number>
+        <number>999</number>
        </property>
       </widget>
      </item>
@@ -629,13 +602,13 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>BrushPreview</class>
+   <class>widgets::BrushPreview</class>
    <extends>QFrame</extends>
    <header>widgets/brushpreview.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>GroupedToolButton</class>
+   <class>widgets::GroupedToolButton</class>
    <extends>QToolButton</extends>
    <header>widgets/groupedtoolbutton.h</header>
   </customwidget>
@@ -643,9 +616,9 @@
  <resources/>
  <connections>
   <connection>
-   <sender>brushsize</sender>
+   <sender>brushsizeSlider</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>spinBox</receiver>
+   <receiver>brushsizeBox</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -659,9 +632,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>spinBox</sender>
+   <sender>brushsizeBox</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>brushsize</receiver>
+   <receiver>brushsizeSlider</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -803,9 +776,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>brushspacing</sender>
+   <sender>brushspacingSlider</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>spinBox_4</receiver>
+   <receiver>brushspacingBox</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -819,9 +792,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>spinBox_4</sender>
+   <sender>brushspacingBox</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>brushspacing</receiver>
+   <receiver>brushspacingSlider</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">

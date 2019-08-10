@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2007-2017 Calle Laakkonen
+   Copyright (C) 2007-2018 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,9 +21,6 @@
 #include "widgets/groupedtoolbutton.h"
 #include <ColorWheel>
 #include <HueSlider>
-using widgets::PaletteWidget;
-using widgets::GroupedToolButton;
-using namespace color_widgets;
 
 #include "docks/colorbox.h"
 #include "docks/utils.h"
@@ -35,11 +32,12 @@ using namespace color_widgets;
 #include <QSettings>
 #include <QMessageBox>
 #include <QMenu>
+#include <QFileDialog>
 
 namespace docks {
 
 ColorBox::ColorBox(const QString& title, QWidget *parent)
-	: QDockWidget(title, parent), _ui(new Ui_ColorBox), m_lastUsedColorChanged(false), _updating(false)
+	: QDockWidget(title, parent), _ui(new Ui_ColorBox), _updating(false)
 {
 	QWidget *w = new QWidget(this);
 	w->resize(167, 95);
@@ -94,10 +92,16 @@ ColorBox::ColorBox(const QString& title, QWidget *parent)
 	QMenu *paletteMenu = new QMenu(this);
 	paletteMenu->addAction(tr("New"), this, SLOT(addPalette()));
 	paletteMenu->addAction(tr("Duplicate"), this, SLOT(copyPalette()));
-	_deletePalette = paletteMenu->addAction(tr("Delete"), this, SLOT(deletePalette()));
+	m_deletePalette = paletteMenu->addAction(tr("Delete"), this, SLOT(deletePalette()));
+
 	paletteMenu->addSeparator();
-	_writeprotectPalette = paletteMenu->addAction(tr("Write Protect"), this, SLOT(toggleWriteProtect()));
-	_writeprotectPalette->setCheckable(true);
+	m_writeprotectPalette = paletteMenu->addAction(tr("Write Protect"), this, SLOT(toggleWriteProtect()));
+	m_writeprotectPalette->setCheckable(true);
+
+	paletteMenu->addSeparator();
+	m_importPalette = paletteMenu->addAction(tr("Import..."), this, SLOT(importPalette()));
+	m_exportPalette = paletteMenu->addAction(tr("Export..."), this, SLOT(exportPalette()));
+
 	_ui->paletteMenuButton->setMenu(paletteMenu);
 	_ui->paletteMenuButton->setStyleSheet("QToolButton::menu-indicator { image: none }");
 
@@ -146,7 +150,6 @@ ColorBox::ColorBox(const QString& title, QWidget *parent)
 
 	m_lastusedAlt = new Palette(this);
 	m_lastusedAlt->setWriteProtected(true);
-	m_lastusedAlt->appendColor(Qt::white);
 
 	_ui->lastused->setPalette(m_lastused);
 	_ui->lastused->setEnableScrolling(false);
@@ -173,9 +176,9 @@ void ColorBox::paletteChanged(int index)
 	} else {
 		Palette *pal = static_cast<PaletteListModel*>(_ui->palettelist->model())->getPalette(index);
 		_ui->palette->setPalette(pal);
-		_deletePalette->setEnabled(!pal->isReadonly());
-		_writeprotectPalette->setEnabled(!pal->isReadonly());
-		_writeprotectPalette->setChecked(pal->isWriteProtected());
+		m_deletePalette->setEnabled(!pal->isReadonly());
+		m_writeprotectPalette->setEnabled(!pal->isReadonly());
+		m_writeprotectPalette->setChecked(pal->isWriteProtected());
 	}
 }
 
@@ -184,8 +187,47 @@ void ColorBox::toggleWriteProtect()
 	Palette *pal = _ui->palette->palette();
 	if(pal) {
 		pal->setWriteProtected(!pal->isWriteProtected());
-		_writeprotectPalette->setChecked(pal->isWriteProtected());
+		m_writeprotectPalette->setChecked(pal->isWriteProtected());
 		_ui->palette->update();
+	}
+}
+
+void ColorBox::importPalette()
+{
+	const QString &filename = QFileDialog::getOpenFileName(
+		this,
+		tr("Import palette"),
+		QString(),
+		tr("Palettes (%1)").arg("*.gpl") + ";;" +
+		tr("All files (*)")
+	);
+
+	if(!filename.isEmpty()) {
+		QScopedPointer<Palette> imported {Palette::fromFile(filename)};
+		QScopedPointer<Palette> pal {Palette::copy(imported.data(), imported->name())};
+
+		auto *palettelist = static_cast<PaletteListModel*>(_ui->palettelist->model());
+		palettelist->saveChanged();
+		pal->save();
+		palettelist->loadPalettes();
+
+		_ui->palettelist->setCurrentIndex(palettelist->findPalette(pal->name()));
+	}
+}
+
+void ColorBox::exportPalette()
+{
+	const QString &filename = QFileDialog::getSaveFileName(
+		this,
+		tr("Export palette"),
+		QString(),
+		tr("GIMP palette (%1)").arg("*.gpl")
+	);
+
+	if(!filename.isEmpty()) {
+		QString err;
+		if(!_ui->palette->palette()->exportPalette(filename, &err))
+			QMessageBox::warning(this, tr("Error"), err);
 	}
 }
 
@@ -262,7 +304,6 @@ void ColorBox::setColor(const QColor& color)
 
 	_ui->colorwheel->setColor(color);
 	_updating = false;
-	changeLastUsedColor(color);
 }
 
 void ColorBox::updateFromRgbSliders()
@@ -304,24 +345,8 @@ void ColorBox::updateFromHsvSpinbox()
 	}
 }
 
-void ColorBox::changeLastUsedColor(const QColor &color)
-{
-	if(m_lastused->count()==0 || !m_lastUsedColorChanged) {
-		addLastUsedColor(color);
-		m_lastUsedColorChanged = true;
-		return;
-	}
-
-	m_lastUsedColorChanged = true;
-	m_lastused->setWriteProtected(false);
-	m_lastused->setColor(0, color);
-	m_lastused->setWriteProtected(true);
-}
-
 void ColorBox::addLastUsedColor(const QColor &color)
 {
-	m_lastUsedColorChanged = false;
-
 	if(m_lastused->count()>0 && m_lastused->color(0).color.rgb() == color.rgb())
 		return;
 
@@ -346,18 +371,16 @@ void ColorBox::swapLastUsedColors()
 {
 	// Swap last-used palettes
 	Palette *swap = m_lastused;
-	const bool lastUsedChanged = m_lastUsedColorChanged;
 	m_lastused = m_lastusedAlt;
 	m_lastusedAlt = swap;
 	_ui->lastused->setPalette(m_lastused);
 
 	// Select last used color
-	if(m_lastused->count()>0) {
-		QColor c = m_lastused->color(0).color;
-		setColor(c);
-		emit colorChanged(c);
-	}
-	m_lastUsedColorChanged = lastUsedChanged;
+	const QColor altColor = m_altColor;
+	m_altColor = _ui->colorwheel->color();
+
+	setColor(altColor);
+	emit colorChanged(altColor);
 }
 
 }

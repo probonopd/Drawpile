@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>330</width>
-    <height>144</height>
+    <width>734</width>
+    <height>485</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,22 +18,110 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QFormLayout" name="formLayout">
-     <property name="fieldGrowthPolicy">
-      <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+    <widget class="QLabel" name="newVersionNotification">
+     <property name="styleSheet">
+      <string notr="true">background: #cbe3ef;
+color: #000;
+border: 1px solid #3daee9;
+border-radius: 3px;
+padding: 6px;</string>
      </property>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Ser&amp;ver:</string>
+     <property name="text">
+      <string>A new Drawpile version that is not compatible with this one has been released.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QLineEdit" name="filter">
+       <property name="placeholderText">
+        <string>Filter</string>
        </property>
-       <property name="buddy">
-        <cstring>address</cstring>
+       <property name="clearButtonEnabled">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item>
+      <spacer name="filterSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="filterLabel">
+       <property name="text">
+        <string>Show:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="showPassworded">
+       <property name="text">
+        <string>Passworded</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="showNsfw">
+       <property name="text">
+        <string>NSFW</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTreeView" name="listing">
+     <property name="rootIsDecorated">
+      <bool>false</bool>
+     </property>
+     <property name="sortingEnabled">
+      <bool>true</bool>
+     </property>
+     <attribute name="headerStretchLastSection">
+      <bool>false</bool>
+     </attribute>
+    </widget>
+   </item>
+   <item>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Enter a host address, session URL or room code to join a session:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
       <widget class="QComboBox" name="address">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="editable">
         <bool>true</bool>
        </property>
@@ -48,54 +136,17 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>&amp;Username:</string>
-       </property>
-       <property name="buddy">
-        <cstring>username</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,3">
-       <item>
-        <widget class="QLineEdit" name="username">
-         <property name="maxLength">
-          <number>22</number>
-         </property>
-         <property name="mandatoryfield" stdset="0">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </item>
-     <item row="3" column="1">
-      <widget class="QCheckBox" name="recordSession">
-       <property name="text">
+     <item>
+      <widget class="QToolButton" name="autoRecord">
+       <property name="toolTip">
         <string>Record session</string>
        </property>
-      </widget>
-     </item>
-     <item row="0" column="0" colspan="2">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Enter a host address, session URL or room code to join a session.</string>
+       <property name="icon">
+        <iconset theme="media-record">
+         <normaloff>theme:media-record.svg</normaloff>theme:media-record.svg</iconset>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -115,7 +166,6 @@
  </widget>
  <tabstops>
   <tabstop>address</tabstop>
-  <tabstop>username</tabstop>
   <tabstop>buttons</tabstop>
  </tabstops>
  <resources/>
@@ -127,8 +177,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>254</x>
+     <y>392</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -143,8 +193,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>322</x>
+     <y>392</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

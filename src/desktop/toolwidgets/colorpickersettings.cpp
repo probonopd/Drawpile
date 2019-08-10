@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2006-2016 Calle Laakkonen
+   Copyright (C) 2006-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,6 +31,15 @@
 #include <QCheckBox>
 
 namespace tools {
+
+namespace props {
+	static const ToolProperties::Value<bool>
+		layerPick { QStringLiteral("layerpick"), false }
+		;
+	static const ToolProperties::RangedValue<int>
+		size { QStringLiteral("size"), 1, 0, 255 }
+		;
+}
 
 ColorPickerSettings::ColorPickerSettings(ToolController *ctrl, QObject *parent)
 	: ToolSettings(ctrl, parent)
@@ -97,25 +106,28 @@ int ColorPickerSettings::getSize() const
 	return m_size->value();
 }
 
-void ColorPickerSettings::quickAdjust1(float adjustment)
+void ColorPickerSettings::quickAdjust1(qreal adjustment)
 {
-	int adj = qRound(adjustment);
-	if(adj!=0)
-		m_size->setValue(m_size->value() + adj);
+	m_quickAdjust1 += adjustment;
+	if(qAbs(m_quickAdjust1) > 1.0) {
+		qreal i;
+		m_quickAdjust1 = modf(m_quickAdjust1, &i);
+		m_size->setValue(m_size->value() + int(i));
+	}
 }
 
 ToolProperties ColorPickerSettings::saveToolSettings()
 {
 	ToolProperties cfg(toolType());
-	cfg.setValue("layerpick", m_layerpick->isChecked());
-	cfg.setValue("size", m_size->value());
+	cfg.setValue(props::layerPick, m_layerpick->isChecked());
+	cfg.setValue(props::size, m_size->value());
 	return cfg;
 }
 
 void ColorPickerSettings::restoreToolSettings(const ToolProperties &cfg)
 {
-	m_layerpick->setChecked(cfg.boolValue("layerpick", false));
-	m_size->setValue(cfg.intValue("size", 1));
+	m_layerpick->setChecked(cfg.value(props::layerPick));
+	m_size->setValue(cfg.value(props::size));
 }
 
 void ColorPickerSettings::addColor(const QColor &color)

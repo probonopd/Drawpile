@@ -99,6 +99,31 @@ Protocol stability promises:
  * New server features may be added at any time, but they should not break older clients,
    nor should a missing feature break newer clients.
 
+### Protocol dp:4.21.2 (2.1.9)
+ * User 0 (server) is now always treated as Operator tier. (Change for experimental smart server)
+
+### Protocol dp:4.21.2 (2.1.2)
+ * Added FIXED flag to LayerAttributes. (Minor protocol stability promise break, but 2.1.1 is still a beta version)
+
+### Protocol dp:4.21.2 (2.1.0)
+
+ * Changed PutImage pixel format to ARGB32_Premultiplied
+ * Added PutTile command
+ * Removed ToolChange and PenMove commands
+ * Added DrawDabsClassic and DrawDabsPixel commands
+ * Added CanvasBackground command
+ * Added TrustedUsers command
+ * General session lock is now applied with the LayerACL command by using layer ID 0
+ * Removed "lock new users by default" feature
+ * Replaced SessionACL message with FeatureAccessLevels message
+ * Added sublayer field to LayerAttributes command
+ * Added flags field and "censored" flag to LayerAttributes command
+ * Added PrivateChat transparent meta message
+
+### Protocol dp:4.20.1 (2.0.9)
+
+ * Added `Filtered` message type. Fully backward compatible.
+
 ### Protocol dp:4.20.1 (2.0.0)
 
  * Protocol major revision 4. Lots of changes!

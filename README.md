@@ -21,7 +21,8 @@ Some feature highlights:
 ## Building with cmake
 
 Common dependencies:
- * Qt 5.5 or newer (QtGui not required for headless server)
+ * Qt 5.9 or newer (QtGui not required for headless server)
+ * KF5 Extra CMake Modules
  * [KF5 KArchive]
 
 Client specific dependencies:
@@ -30,11 +31,13 @@ Client specific dependencies:
 * KF5 KDNSSD (optional: local server discovery with Zeroconf)
 * GIFLIB (optional: animated GIF export)
 * MiniUPnP (optional: automatic port forwarding setup)
+* LibVPX (optional: WebM video export)
 
-Server specific dependencies:
+Server specific dependencies (you can also take a look at [Docker build](server/docker/Dockerfile) script):
 
 * libsystemd (optional: systemd socket activation support)
 * libmicrohttpd (optional: HTTP admin API)
+* libsodium (optional: ext-auth support)
 
 It's a good idea to build in a separate directory to keep build files
 separate from the source tree.
@@ -58,12 +61,19 @@ The configuration step supports some options:
 * `CMAKE_BUILD_TYPE=debug`: enable debugging features
 * `INITSYS=""`: select init system integration (currently only "systemd" is supported.) Set this to an empty string to disable all integration.
 * `TESTS=on`: build unit tests (run test suite with `make test`)
+* `KIS_TABLET=on`: enable improved graphics tablet support (taken from Krita)
 
-Example: `$ cmake .. -DCMAKE_BUILD_TYPE=debug`
+Notes about `KIS_TABLET`:
+
+ * On Windows, it enables Windows Ink and improved Wintab support. A patched version of Qt should be used. See `pkg/win` for the patch.
+ * On Linux (or any platform with an X server,) it enables a modified XInput2 event handler.
+ * On macOS it does nothing and shouldn't be used.
+
+Example: `$ cmake .. -DCMAKE_BUILD_TYPE=debug -DKIS_TABLET=on`
 
 For instructions on how to build Drawpile on Windows and OSX, see the [Building from sources] page.
 
-[KF5 KArchive]: https://projects.kde.org/projects/frameworks/karchive
-[QtColorPicker]: https://github.com/mbasaglia/Qt-Color-Picker 
-[Building from sources]: https://github.com/callaa/Drawpile/wiki/Building-from-sources
+[KF5 KArchive]: https://projects.kde.org/projects/frameworks/karchive  
+[QtColorPicker]: https://gitlab.com/mattia.basaglia/Qt-Color-Widgets  
+[Building from sources]: https://github.com/callaa/Drawpile/wiki/Building-from-sources  
 

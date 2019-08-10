@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2013-2015 Calle Laakkonen
+   Copyright (C) 2013-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,12 +19,11 @@
 #ifndef LAYERACLMENU_H
 #define LAYERACLMENU_H
 
-#include <QMenu>
-#include <QList>
+#include "canvas/features.h"
 
-namespace canvas {
-	class UserListModel;
-}
+#include <QMenu>
+
+class QAbstractItemModel;
 
 namespace docks {
 
@@ -32,10 +31,11 @@ class LayerAclMenu : public QMenu
 {
     Q_OBJECT
 public:
-	explicit LayerAclMenu(QWidget *parent = 0);
+	explicit LayerAclMenu(QWidget *parent=nullptr);
 
-	void setUserList(canvas::UserListModel *model);
-	void setAcl(bool lock, const QList<uint8_t> acl);
+	void setUserList(QAbstractItemModel *model);
+	void setAcl(bool lock, canvas::Tier tier, const QList<uint8_t> acl);
+	void setCensored(bool censor);
 
 signals:
 	/**
@@ -47,21 +47,27 @@ signals:
 	 * @param lock general layer lock
 	 * @param ids list of user IDs.
 	 */
-	void layerAclChange(bool lock, QList<uint8_t> ids);
+	void layerAclChange(bool lock, canvas::Tier tier, QList<uint8_t> ids);
+
+	/**
+	 * @brief The censored checkbox was toggled
+	 */
+	void layerCensoredChange(bool censor);
+
+protected:
+	void showEvent(QShowEvent *e);
 
 private slots:
 	void userClicked(QAction *useraction);
-	void rowsInserted(const QModelIndex &parent, int start, int end);
-	void rowsMoved(const QModelIndex&, int, int, const QModelIndex&, int);
-	void rowsRemoved(const QModelIndex &parent, int start, int end);
+	void refreshParentalControls();
 
 private:
-	void addUser(int index);
-
-	canvas::UserListModel *m_model;
-	QAction *_lock;
-	QAction *_allusers;
-	QList<QAction*> _users;
+	QAbstractItemModel *m_userlist;
+	QList<uint8_t> m_exclusives;
+	QAction *m_lock;
+	QAction *m_censored;
+	QActionGroup *m_tiers;
+	QActionGroup *m_users;
 };
 
 }

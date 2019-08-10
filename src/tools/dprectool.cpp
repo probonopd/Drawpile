@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2014-2017 Calle Laakkonen
+   Copyright (C) 2014-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,9 +18,11 @@
 */
 
 #include "config.h"
+#include "stats.h"
 
-#include "../shared/record/reader.h"
-#include "../shared/record/writer.h"
+#include "../libshared/record/reader.h"
+#include "../libshared/record/writer.h"
+#include "../libclient/canvas/aclfilter.h"
 
 #include <QCoreApplication>
 #include <QStringList>
@@ -39,7 +41,7 @@ void printVersion()
 	printf("Qt version: %s (compiled against %s)\n", qVersion(), QT_VERSION_STR);
 }
 
-bool convertRecording(const QString &inputfilename, const QString &outputfilename, const QString &outputFormat)
+bool convertRecording(const QString &inputfilename, const QString &outputfilename, const QString &outputFormat, bool doAclFiltering)
 {
 	// Open input file
 	Reader reader(inputfilename);
@@ -58,7 +60,7 @@ bool convertRecording(const QString &inputfilename, const QString &outputfilenam
 		fprintf(stderr, "Input file is not a Drawpile recording!\n");
 		return false;
 	case CANNOT_READ:
-		fprintf(stderr, "Unable to read input file: %s\n", reader.errorString().toLocal8Bit().constData());
+		fprintf(stderr, "Unable to read input file: %s\n", qPrintable(reader.errorString()));
 		return false;
 
 	case COMPATIBLE:
@@ -93,40 +95,49 @@ bool convertRecording(const QString &inputfilename, const QString &outputfilenam
 		return false;
 	}
 
-	// Convert input to output
+	// Open output file
 	if(!writer->open()) {
 		fprintf(stderr, "Couldn't open %s: %s\n",
-			outputfilename.toLocal8Bit().constData(),
-			writer->errorString().toLocal8Bit().constData()
+			qPrintable(outputfilename),
+			qPrintable(writer->errorString())
 			);
 		return false;
 	}
-	if(!writer->writeHeader()) {
+	if(!writer->writeHeader(reader.metadata())) {
 		fprintf(stderr, "Error while writing header: %s\n",
-			writer->errorString().toLocal8Bit().constData()
+			qPrintable(writer->errorString())
 			);
 		return false;
 	}
 
+	// Prepare filters
+	canvas::AclFilter aclFilter;
+	aclFilter.reset(1, false);
+
+	// Convert and/or filter recording
 	bool notEof = true;
 	do {
 		MessageRecord mr = reader.readNext();
 		switch(mr.status) {
-		case MessageRecord::OK:
+		case MessageRecord::OK: {
+			if(doAclFiltering && !aclFilter.filterMessage(*mr.message)) {
+				writer->writeMessage(*mr.message->asFiltered());
 
-			if(!writer->writeMessage(*mr.message)) {
-				fprintf(stderr, "Error while writing message: %s\n",
-					writer->errorString().toLocal8Bit().constData()
-					);
-				return false;
+			} else {
+				if(!writer->writeMessage(*mr.message)) {
+					fprintf(stderr, "Error while writing message: %s\n",
+						qPrintable(writer->errorString())
+						);
+					return false;
+				}
 			}
-			delete mr.message;
 			break;
+			}
 
 		case MessageRecord::INVALID:
 			writer->writeComment(QStringLiteral("WARNING: Unrecognized message type %1 of length %2 at offset 0x%3")
-				.arg(int(mr.error.type))
-				.arg(mr.error.len)
+				.arg(int(mr.invalid_type))
+				.arg(mr.invalid_len)
 				.arg(reader.currentPosition())
 				);
 			break;
@@ -137,6 +148,43 @@ bool convertRecording(const QString &inputfilename, const QString &outputfilenam
 		}
 	} while(notEof);
 
+	return true;
+}
+
+/**
+ * Print the version number of this recording. The output can be parsed easily in a shell script.
+ * Output format: <compatibility flag> <protocol version> <client version string>
+ * Example: C dp:4.20.1 2.0.5
+ * Compatability flag is one of:
+ *   - C: fully compatible with this dprectool/drawpile-cmd version
+ *   - M: minor incompatibility (might render differently)
+ *   - U: unknown compatibility (made with a newer version: some features may be missing)
+ *   - I: known to be incompatible
+ */
+bool printRecordingVersion(const QString &inputFilename)
+{
+	Reader reader(inputFilename);
+	const Compatibility compat = reader.open();
+
+	char compatflag = '?';
+	switch(compat) {
+		case COMPATIBLE: compatflag = 'C'; break;
+		case MINOR_INCOMPATIBILITY: compatflag = 'M'; break;
+		case UNKNOWN_COMPATIBILITY: compatflag = 'U'; break;
+		case INCOMPATIBLE: compatflag = 'I'; break;
+		case NOT_DPREC:
+			fprintf(stderr, "Not a drawpile recording!\n");
+			return false;
+		case CANNOT_READ:
+			fprintf(stderr, "Cannot read file: %s", qPrintable(reader.errorString()));
+			return false;
+	}
+
+	printf("%c %s %s\n",
+		compatflag,
+		qPrintable(reader.formatVersion().asString()),
+		reader.writerVersion().isEmpty() ? "(no writer version)" : qPrintable(reader.writerVersion())
+		);
 	return true;
 }
 
@@ -163,8 +211,16 @@ int main(int argc, char *argv[]) {
 	parser.addOption(outOption);
 
 	// --format, -f
-	QCommandLineOption formatOption(QStringList() << "f" << "format", "Output format (binary/text)", "format");
+	QCommandLineOption formatOption(QStringList() << "f" << "format", "Output format (binary/text/version)", "format");
 	parser.addOption(formatOption);
+
+	// --acl, -A
+	QCommandLineOption aclOption(QStringList() << "A" << "acl", "Perform ACL filtering");
+	parser.addOption(aclOption);
+
+	// --msg-freq
+	QCommandLineOption msgFreqOption(QStringList() << "msg-freq", "Print message frequency table");
+	parser.addOption(msgFreqOption);
 
 	// input file name
 	parser.addPositionalArgument("input", "recording file", "<input.dprec>");
@@ -177,13 +233,27 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	QStringList inputfiles = parser.positionalArguments();
+	const QStringList inputfiles = parser.positionalArguments();
 	if(inputfiles.isEmpty()) {
 		parser.showHelp(1);
 		return 1;
 	}
 
-	if(!convertRecording(inputfiles.at(0), parser.value(outOption), parser.value(formatOption)))
+	const QString format = parser.value(formatOption);
+	if(format == "version") {
+		return !printRecordingVersion(inputfiles.at(0));
+	}
+
+	if(parser.isSet(msgFreqOption)) {
+		return printMessageFrequency(inputfiles.at(0)) ? 0 : 1;
+	}
+
+	if(!convertRecording(
+		inputfiles.at(0),
+		parser.value(outOption),
+		parser.value(formatOption),
+		parser.isSet(aclOption)
+		))
 		return 1;
 
 	return 0;

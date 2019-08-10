@@ -36,7 +36,7 @@ public:
 
 	QString toolType() const override { return QStringLiteral("fill"); }
 
-	void quickAdjust1(float adjustment) override;
+	void quickAdjust1(qreal adjustment) override;
 	void setForeground(const QColor &color) override;
 
 	int getSize() const override { return 0; }
@@ -50,10 +50,11 @@ public slots:
 	void toggleEraserMode() override;
 
 protected:
-	virtual QWidget *createUiWidget(QWidget *parent);
+	QWidget *createUiWidget(QWidget *parent) override;
 
 private:
 	Ui_FillSettings * _ui;
+	qreal m_quickAdjust1 = 0.0;
 };
 
 }

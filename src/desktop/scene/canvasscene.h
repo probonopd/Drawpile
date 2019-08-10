@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2006-2017 Calle Laakkonen
+   Copyright (C) 2006-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,9 +21,8 @@
 
 #include <QGraphicsScene>
 
-#include "../shared/net/message.h"
-
 namespace paintcore {
+	class LayerStackPixmapCacheObserver;
 	class LayerStack;
 	class Brush;
 }
@@ -59,6 +58,9 @@ class CanvasScene : public QGraphicsScene
 	Q_OBJECT
 
 public:
+	//! Margin around the image to make working near corners easier
+	static const int MARGIN = 900;
+
 	CanvasScene(QObject *parent);
 	~CanvasScene();
 
@@ -76,6 +78,8 @@ public:
 
 	canvas::CanvasModel *model() const { return m_model; }
 
+	paintcore::LayerStackPixmapCacheObserver *layerStackObserver() { return m_layerstackObserver; }
+
 public slots:
 	//! Show annotation borders
 	void showAnnotationBorders(bool hl);
@@ -83,8 +87,14 @@ public slots:
 	//! Show/hide remote cursor markers
 	void showUserMarkers(bool show);
 
+	//! Show user names in cursor markers
+	void showUserNames(bool show);
+
 	//! Show layer selection in cursor marker
 	void showUserLayers(bool show);
+
+	//! Show avatars in cursor marker
+	void showUserAvatars(bool show);
 
 	//! Show hide laser pointer trails
 	void showLaserTrails(bool show);
@@ -123,7 +133,8 @@ private:
 	AnnotationItem *getAnnotationItem(int id);
 
 	//! The board contents
-	CanvasItem *m_image;
+	paintcore::LayerStackPixmapCacheObserver *m_layerstackObserver;
+	CanvasItem *m_canvasItem;
 
 	canvas::CanvasModel *m_model;
 
@@ -140,9 +151,11 @@ private:
 
 	bool _showAnnotationBorders;
 	bool _showAnnotations;
-	bool _showUserMarkers;
-	bool _showUserLayers;
-	bool _showLaserTrails;
+	bool m_showUserMarkers;
+	bool m_showUserNames;
+	bool m_showUserLayers;
+	bool m_showUserAvatars;
+	bool m_showLaserTrails;
 };
 
 }

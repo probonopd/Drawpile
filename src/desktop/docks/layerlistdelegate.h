@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2008-2015 Calle Laakkonen
+   Copyright (C) 2008-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ namespace docks {
 class LayerListDelegate : public QItemDelegate {
 Q_OBJECT
 public:
-	LayerListDelegate(QObject *parent=0);
+	LayerListDelegate(QObject *parent=nullptr);
 
 	void paint(QPainter *painter, const QStyleOptionViewItem &option,
 			const QModelIndex &index) const;
@@ -55,10 +55,12 @@ signals:
 	void layerCommand(protocol::MessagePtr msg);
 
 private:
-	void drawOpacityGlyph(const QRectF& rect, QPainter *painter, float value, bool hidden) const;
+	void drawOpacityGlyph(const QRectF& rect, QPainter *painter, float value, bool hidden, bool censored) const;
 
-	QPixmap m_visibleicon;
-	QPixmap m_hiddenicon;
+	QIcon m_visibleIcon;
+	QIcon m_censoredIcon;
+	QIcon m_hiddenIcon;
+	QIcon m_fixedIcon;
 
 	bool m_showNumbers;
 };

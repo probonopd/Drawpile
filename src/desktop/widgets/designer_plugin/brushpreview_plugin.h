@@ -17,8 +17,8 @@
    along with Drawpile.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLUGIN_H
-#define PLUGIN_H
+#ifndef BRUSHPREVIEW_PLUGIN_H
+#define BRUSHPREVIEW_PLUGIN_H
 
 #include <QtUiPlugin/QDesignerCustomWidgetCollectionInterface>
 

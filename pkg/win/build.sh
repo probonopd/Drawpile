@@ -1,28 +1,36 @@
 #!/bin/bash
 
+set -e
+
 if [ $# -ne 1 ]; then
-	echo "Usage: ./build.sh <shell|pkg|installer>"
+	echo "Usage: ./build.sh <shell|pkg|installer|release>"
 	exit 1
 fi
 
-mkdir -p out
+mkdir out
 
 cd ../..
 
-IMAGE="dpwin"
+IMAGE="${IMAGE:-dpwin8}"
 SRCVOL="$(pwd):/Drawpile:ro"
 OUTVOL="$(pwd)/pkg/win/out:/out"
 
 if [ "$1" == "shell" ]; then
 	CMD="bash"
-elif [ "$1" == "pkg" ] || [ "$1" == "installer" ]; then
+else
 	CMD="/Drawpile/pkg/win/make-pkg.sh"
 fi
 
-docker run --rm -ti -v "$SRCVOL" -v "$OUTVOL" $IMAGE $CMD
+echo "Running $CMD in $IMAGE"
 
-if [ "$1" == "installer" ]; then
+docker run --rm -ti -v "$SRCVOL" -v "$OUTVOL"  $IMAGE $CMD
+
+if [ "$1" == "installer" ] || [ "$1" == "release" ]; then
 	cd -
 	./make-innosetup.sh
+fi
+
+if [ "$1" == "release" ]; then
+	cp -v out/drawpile-*setup*.exe ../../desktop/artifacts/
 fi
 

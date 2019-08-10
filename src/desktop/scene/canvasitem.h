@@ -22,7 +22,7 @@
 #include <QGraphicsObject>
 
 namespace paintcore {
-	class LayerStack;
+	class LayerStackPixmapCacheObserver;
 }
 
 namespace drawingboard {
@@ -35,24 +35,19 @@ class CanvasItem : public QGraphicsObject
 Q_OBJECT
 public:
 	//! Construct an empty board
-	CanvasItem(paintcore::LayerStack *layerstack, QGraphicsItem *parent=0);
+	CanvasItem(paintcore::LayerStackPixmapCacheObserver *observer, QGraphicsItem *parent=nullptr);
 
-	/** reimplematation */
-	QRectF boundingRect() const;
-
-public slots:
-	void refreshImage(const QRect &area);
+	QRectF boundingRect() const override;
 
 private slots:
+	void refreshImage(const QRect &area);
 	void canvasResize();
 
 protected:
-	/** reimplementation */
-	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 private:
-	paintcore::LayerStack *m_image;
-	QPixmap _cache;
+	paintcore::LayerStackPixmapCacheObserver *m_image;
 };
 
 }

@@ -29,13 +29,13 @@ cd $PKGNAME
 
 # Copy DLLs
 MBIN="$MXEROOT/bin"
+cp "$MBIN/libwinpthread-1.dll" .
 cp "$MBIN/libgcc_s_seh-1.dll" .
-cp "$MBIN/libstdc++-6.dll" .
 cp "$MBIN/libstdc++-6.dll" .
 cp "$MBIN/libbz2.dll" .
 cp "$MBIN/liblzma-5.dll" .
 cp "$MBIN/zlib1.dll" .
-cp "$MBIN/libpcre16-0.dll" .
+cp "$MBIN/libpcre2-16-0.dll" .
 cp "$MBIN/libpcre-1.dll" .
 cp "$MBIN/libharfbuzz-0.dll" .
 cp "$MBIN/libpng16-16.dll" .
@@ -44,12 +44,14 @@ cp "$MBIN/libfreetype-6.dll" .
 cp "$MBIN/libglib-2.0-0.dll" .
 cp "$MBIN/libintl-8.dll" .
 cp "$MBIN/libiconv-2.dll" .
-cp "$MBIN/libeay32.dll" .
-cp "$MBIN/ssleay32.dll" .
+cp "$MBIN/libcrypto-1_1-x64.dll" .
+cp "$MBIN/libssl-1_1-x64.dll" .
 cp "$MBIN/libgif-7.dll" .
 cp "$MBIN/libminiupnpc.dll" .
 cp "$MBIN/libsqlite3-0.dll" .
 cp "$MBIN/libKF5Archive.dll" .
+cp "$MBIN/libKF5DNSSD.dll" .
+cp "$MBIN/libsodium-23.dll" .
 
 QROOT="$MXEROOT/qt5"
 cp "$QROOT/bin/Qt5Core.dll" .
@@ -62,6 +64,9 @@ cp "$QROOT/bin/Qt5Sql.dll" .
 
 mkdir -p platforms
 cp "$QROOT/plugins/platforms/qwindows.dll" platforms/
+
+mkdir -p styles
+cp "$QROOT/plugins/styles/qwindowsvistastyle.dll" styles/
 
 mkdir -p audio
 cp "$QROOT/plugins/audio/qtaudio_windows.dll" audio/
@@ -87,10 +92,11 @@ cp /Build/bin/dprectool.exe .
 cp -r /Drawpile/desktop/theme .
 cp -r /Drawpile/desktop/sounds .
 cp -r /Drawpile/desktop/palettes .
+cp /Drawpile/desktop/nightmode.colors .
 
 # Copy translations
 mkdir -p i18n
-for tr in cs de fi ja ru zh
+for tr in cs de fi ja ru zh vi uk it
 do
 	cp "$QROOT/translations/qt_$tr.qm" i18n/ || true
 	cp "/Build/src/client/drawpile_$tr.qm" i18n/

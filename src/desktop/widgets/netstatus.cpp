@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2006-2017 Calle Laakkonen
+   Copyright (C) 2006-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,10 +21,11 @@
 #include "widgets/popupmessage.h"
 #include "dialogs/certificateview.h"
 #include "dialogs/netstats.h"
-#include "../shared/util/whatismyip.h"
+#include "utils/icon.h"
+#include "../libshared/util/whatismyip.h"
 
 #ifdef HAVE_UPNP
-#include "net/upnp.h"
+#include "../libshared/util/upnp.h"
 #endif
 
 #include <QAction>
@@ -90,7 +91,7 @@ NetStatus::NetStatus(QWidget *parent)
 	connect(WhatIsMyIp::instance(), SIGNAL(myAddressIs(QString)), this, SLOT(externalIpDiscovered(QString)));
 
 #ifdef HAVE_UPNP
-	connect(net::UPnPClient::instance(), SIGNAL(externalIp(QString)), this, SLOT(externalIpDiscovered(QString)));
+	connect(UPnPClient::instance(), &UPnPClient::externalIp, this, &NetStatus::externalIpDiscovered);
 #endif
 
 	// Option to hide the server address
@@ -115,25 +116,16 @@ NetStatus::NetStatus(QWidget *parent)
 	connect(showNetStats, SIGNAL(triggered()), this, SLOT(showNetStats()));
 
 	// Security level icon
-	_security = new QLabel(QString(), this);
-	_security->setFixedSize(QSize(16, 16));
-	_security->hide();
-	layout->addWidget(_security);
+	m_security = new QLabel(QString(), this);
+	m_security->setFixedSize(QSize(16, 16));
+	m_security->hide();
+	layout->addWidget(m_security);
 
-	_security->setContextMenuPolicy(Qt::ActionsContextMenu);
+	m_security->setContextMenuPolicy(Qt::ActionsContextMenu);
 
 	QAction *showcert = new QAction(tr("Show certificate"), this);
-	_security->addAction(showcert);
+	m_security->addAction(showcert);
 	connect(showcert, SIGNAL(triggered()), this, SLOT(showCertificate()));
-
-	// Low space alert
-	m_lowspace = new QLabel(tr("Low space!"), this);
-	m_lowspace->setToolTip(tr("Server is almost out of space for session history! Reset the session to free some up."));
-	QPalette lowSpacePalette = m_lowspace->palette();
-	lowSpacePalette.setColor(QPalette::WindowText, Qt::red);
-	m_lowspace->setPalette(lowSpacePalette);
-	m_lowspace->setVisible(false);
-	layout->addWidget(m_lowspace);
 
 	// Popup label
 	m_popup = new PopupMessage(this);
@@ -198,35 +190,30 @@ void NetStatus::setSecurityLevel(net::Server::Security level, const QSslCertific
 	switch(level) {
 	case net::Server::NO_SECURITY: break;
 	case net::Server::NEW_HOST:
-		iconname = "semi-trusted";
+		iconname = "security-medium";
 		tooltip = tr("A previously unvisited host");
 		break;
 
 	case net::Server::KNOWN_HOST:
-		iconname = "semi-trusted";
+		iconname = "security-medium";
 		tooltip = tr("Host certificate has not changed since the last visit");
 		break;
 
 	case net::Server::TRUSTED_HOST:
-		iconname = "trusted";
+		iconname = "security-high";
 		tooltip = tr("This is a trusted host");
 		break;
 	}
 
 	if(iconname.isEmpty()) {
-		_security->hide();
+		m_security->hide();
 	} else {
-		_security->setPixmap(QIcon("builtin:" + iconname + ".svg").pixmap(16, 16));
-		_security->setToolTip(tooltip);
-		_security->show();
+		m_security->setPixmap(icon::fromTheme(iconname).pixmap(16, 16));
+		m_security->setToolTip(tooltip);
+		m_security->show();
 	}
 
 	m_certificate = certificate;
-}
-
-void NetStatus::setLowSpaceAlert(bool lowSpace)
-{
-	m_lowspace->setVisible(lowSpace);
 }
 
 void NetStatus::hostDisconnecting()
@@ -253,7 +240,6 @@ void NetStatus::hostDisconnected()
 
 	message(tr("Disconnected"));
 	setSecurityLevel(net::Server::NO_SECURITY, QSslCertificate());
-	setLowSpaceAlert(false);
 
 	if(_netstats)
 		_netstats->setDisconnected();
@@ -371,8 +357,9 @@ void NetStatus::join(int id, const QString& user)
 	message(tr("<b>%1</b> joined").arg(user.toHtmlEscaped()));
 }
 
-void NetStatus::leave(const QString& user)
+void NetStatus::leave(int id, const QString& user)
 {
+	Q_UNUSED(id);
 	message(tr("<b>%1</b> left").arg(user.toHtmlEscaped()));
 }
 

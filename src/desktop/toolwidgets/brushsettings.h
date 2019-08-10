@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2006-2017 Calle Laakkonen
+   Copyright (C) 2006-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,10 +21,11 @@
 
 #include "toolsettings.h"
 
-#include <QWidget>
-#include <QAbstractListModel>
-
 class QAction;
+
+namespace brushes {
+	class ClassicBrush;
+}
 
 namespace tools {
 
@@ -44,20 +45,23 @@ public:
 
 	void setActiveTool(tools::Tool::Type tool) override;
 	void setForeground(const QColor& color) override;
-	void quickAdjust1(float adjustment) override;
+	void quickAdjust1(qreal adjustment) override;
 
 	int getSize() const override;
-	bool getSubpixelMode() const override { return true; }
+	bool getSubpixelMode() const override;
+	bool isSquare() const override;
 
 	void pushSettings() override;
 	ToolProperties saveToolSettings() override;
 	void restoreToolSettings(const ToolProperties &cfg) override;
 
-	void setCurrentBrushSettings(const ToolProperties &brushProps);
-	ToolProperties getCurrentBrushSettings() const;
+	void setCurrentBrush(brushes::ClassicBrush brush);
+	brushes::ClassicBrush currentBrush() const;
 
 	int currentBrushSlot() const;
 	bool isCurrentEraserSlot() const;
+
+	void setShareBrushSlotColor(bool sameColor);
 
 public slots:
 	void selectBrushSlot(int i);
@@ -67,6 +71,7 @@ public slots:
 signals:
 	void colorChanged(const QColor &color);
 	void eraseModeChanged(bool erase);
+	void subpixelModeChanged(bool subpixel, bool square);
 
 protected:
 	QWidget *createUiWidget(QWidget *parent) override;
@@ -76,38 +81,6 @@ private slots:
 	void setEraserMode(bool erase);
 	void updateUi();
 	void updateFromUi();
-
-private:
-	struct Private;
-	Private *d;
-};
-
-class BrushPresetModel : public QAbstractListModel {
-	Q_OBJECT
-public:
-	enum BrushPresetRoles {
-		ToolPropertiesRole = Qt::UserRole + 1
-	};
-
-	static BrushPresetModel *getSharedInstance();
-
-	explicit BrushPresetModel(QObject *parent=nullptr);
-	~BrushPresetModel();
-
-	int rowCount(const QModelIndex &parent=QModelIndex()) const override;
-	QVariant data(const QModelIndex &index, int role=Qt::DisplayRole) const override;
-	Qt::ItemFlags flags(const QModelIndex &index) const override;
-	QMap<int,QVariant> itemData(const QModelIndex &index) const override;
-	bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole) override;
-	bool setItemData(const QModelIndex &index, const QMap<int,QVariant> &roles) override;
-	bool insertRows(int row, int count, const QModelIndex &parent=QModelIndex()) override;
-	bool removeRows(int row, int count, const QModelIndex &parent=QModelIndex()) override;
-	Qt::DropActions supportedDropActions() const override;
-	void addBrush(const ToolProperties &brushProps);
-
-	void saveBrushes() const;
-	void loadBrushes();
-	void makeDefaultBrushes();
 
 private:
 	struct Private;

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 2008-2014 Calle Laakkonen, 2007 M.K.A.
+   Copyright (C) 2008-2019 Calle Laakkonen, 2007 M.K.A.
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,62 +19,102 @@
 #define Navigator_H
 
 #include <QDockWidget>
-#include <QGraphicsView>
+
+class Ui_Navigator;
+
+namespace paintcore {
+	class LayerStackPixmapCacheObserver;
+}
+
+namespace drawingboard {
+	class CanvasScene;
+}
+
+namespace canvas {
+	class UserCursorModel;
+}
 
 namespace docks {
 
-//! Navigator graphics view
-class NavigatorView
-	: public QGraphicsView
+class NavigatorView : public QWidget
 {
 	Q_OBJECT
 public:
 	NavigatorView(QWidget *parent);
 
+	void setLayerStackObserver(paintcore::LayerStackPixmapCacheObserver *observer);
+	void setUserCursors(canvas::UserCursorModel *cursors) { m_cursors = cursors; }
+
 	void setViewFocus(const QPolygonF& rect);
-	
+
 public slots:
-	void rescale();
+	void setShowCursors(bool showCursors);
+	void setRealtimeUpdate(bool realtime);
 
 signals:
 	void focusMoved(const QPoint& to);
 	void wheelZoom(int steps);
 	
 protected:
-	void drawForeground(QPainter *painter, const QRectF& rect);
+	void paintEvent(QPaintEvent *event);
 	void resizeEvent(QResizeEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void mousePressEvent(QMouseEvent *event);
-	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
 
+private slots:
+	void onChange();
+	void onResize();
+	void refreshCache();
+
 private:
-	QPolygonF _focusrect;
-	int _zoomWheelDelta;
-	bool _dragging;
+	paintcore::LayerStackPixmapCacheObserver *m_observer;
+	canvas::UserCursorModel *m_cursors;
+	QPixmap m_cache;
+	QPixmap m_cursorBackground;
+	QSize m_cachedSize;
+
+	QTimer *m_refreshTimer;
+
+	QPolygonF m_focusRect;
+	int m_zoomWheelDelta;
+	bool m_showCursors;
 };
 
 //! Navigator dock widget
-class Navigator
-	: public QDockWidget
+class Navigator : public QDockWidget
 {
 	Q_OBJECT
 public:
 	Navigator(QWidget *parent);
-	
+	~Navigator();
+
 	//! Set associated graphics scene
-	void setScene(QGraphicsScene *scene);
+	void setScene(drawingboard::CanvasScene *scene);
+
+	//! Set the user list (optional)
+	void setUserCursors(canvas::UserCursorModel *cursors);
 
 public slots:
 	//! Move the view focus rectangle
 	void setViewFocus(const QPolygonF& rect);
 
+	//! Set the current angle and zoom
+	void setViewTransformation(qreal zoom, qreal angle);
+
+	void setMinimumZoom(int zoom);
+
+private slots:
+	void updateZoom(int value);
+
 signals:
 	void focusMoved(const QPoint& to);
 	void wheelZoom(int steps);
+	void zoomChanged(qreal newZoom);
 	
 private:
-	NavigatorView *_view;
+	Ui_Navigator *m_ui;
+	bool m_updating;
 };
 
 }

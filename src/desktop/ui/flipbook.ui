@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>690</width>
+    <width>755</width>
     <height>401</height>
    </rect>
   </property>
@@ -15,23 +15,27 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
    <item>
-    <widget class="QLabel" name="pixmap">
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Sunken</enum>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
+    <widget class="FlipbookView" name="view" native="true"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QToolButton" name="zoomButton">
+       <property name="icon">
+        <iconset theme="zoom-in">
+         <normaloff>theme:zoom-original.svg</normaloff>theme:zoom-original.svg</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>22</width>
+         <height>22</height>
+        </size>
+       </property>
+       <property name="autoRaise">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QToolButton" name="rewindButton">
        <property name="minimumSize">
@@ -42,8 +46,7 @@
        </property>
        <property name="icon">
         <iconset theme="media-skip-backward">
-         <normaloff>theme:media-skip-backward.svg</normaloff>
-        </iconset>
+         <normaloff>theme:media-skip-backward.svg</normaloff>theme:media-skip-backward.svg</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -66,8 +69,7 @@
        </property>
        <property name="icon">
         <iconset theme="media-playback-start">
-         <normaloff>theme:media-playback-start.svg</normaloff>
-        </iconset>
+         <normaloff>theme:media-playback-start.svg</normaloff>theme:media-playback-start.svg</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -108,7 +110,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="loopStart"/>
+      <widget class="QSpinBox" name="loopStart">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="label_4">
@@ -118,7 +124,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="loopEnd"/>
+      <widget class="QSpinBox" name="loopEnd">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer">
@@ -153,33 +163,18 @@
        </property>
       </widget>
      </item>
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>10</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="useBgLayer">
-       <property name="text">
-        <string>Use background layer</string>
-       </property>
-      </widget>
-     </item>
     </layout>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>FlipbookView</class>
+   <extends>QWidget</extends>
+   <header>widgets/flipbookview.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

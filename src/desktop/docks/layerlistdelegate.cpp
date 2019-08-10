@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2008-2017 Calle Laakkonen
+   Copyright (C) 2008-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include "docks/layerlistdelegate.h"
 #include "canvas/layerlist.h"
 #include "utils/icon.h"
-#include "../shared/net/layer.h"
+#include "../libshared/net/layer.h"
 
 #include <QDebug>
 #include <QMouseEvent>
@@ -29,10 +29,14 @@
 
 namespace docks {
 
+static const QSize ICON_SIZE { 16, 16 };
+
 LayerListDelegate::LayerListDelegate(QObject *parent)
 	: QItemDelegate(parent),
-	  m_visibleicon(icon::fromTheme("layer-visible-on").pixmap(16, 16)),
-	  m_hiddenicon(icon::fromTheme("layer-visible-off").pixmap(16, 16)),
+	  m_visibleIcon(icon::fromTheme("layer-visible-on")),
+	  m_censoredIcon(QIcon(":/icons/censored.svg")),
+	  m_hiddenIcon(icon::fromTheme("layer-visible-off")),
+	  m_fixedIcon(icon::fromTheme("window-pin")),
 	  m_showNumbers(false)
 {
 }
@@ -44,8 +48,7 @@ void LayerListDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
 	const canvas::LayerListItem &layer = index.data().value<canvas::LayerListItem>();
 
-	const int myId = static_cast<const canvas::LayerListModel*>(index.model())->myId();
-	if(layer.isLockedFor(myId))
+	if(index.data(canvas::LayerListModel::IsLockedRole).toBool())
 		opt.state &= ~QStyle::State_Enabled;
 
 	drawBackground(painter, option, index);
@@ -54,7 +57,7 @@ void LayerListDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
 	// Draw layer opacity glyph
 	QRect stylerect(opt.rect.topLeft() + QPoint(0, opt.rect.height()/2-12), QSize(24,24));
-	drawOpacityGlyph(stylerect, painter, layer.opacity, layer.hidden);
+	drawOpacityGlyph(stylerect, painter, layer.opacity, layer.hidden, layer.censored);
 
 	// Draw layer name
 	textrect.setLeft(stylerect.right());
@@ -71,12 +74,22 @@ void LayerListDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
 	drawDisplay(painter, opt, textrect, title);
 
+	// Draw fixed icon
+	if(layer.fixed) {
+		m_fixedIcon.paint(painter,
+			opt.rect.right() - ICON_SIZE.width(),
+			opt.rect.top() + opt.rect.height()/2 - ICON_SIZE.height()/2,
+			ICON_SIZE.width(),
+			ICON_SIZE.height()
+		);
+	}
+
 	painter->restore();
 }
 
 bool LayerListDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index)
 {
-	if(event->type() == QEvent::MouseButtonRelease) {
+	if(event->type() == QEvent::MouseButtonPress) {
 		const canvas::LayerListItem &layer = index.data().value<canvas::LayerListItem>();
 		const QMouseEvent *me = static_cast<QMouseEvent*>(event);
 
@@ -84,6 +97,7 @@ bool LayerListDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, co
 			if(me->x() < 24) {
 				// Clicked on opacity glyph: toggle visibility
 				emit toggleVisibility(layer.id, layer.hidden);
+				return true;
 			}
 		}
 	}
@@ -94,9 +108,8 @@ bool LayerListDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, co
 QSize LayerListDelegate::sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const
 {
 	QSize size = QItemDelegate::sizeHint(option, index);
-	const QSize iconsize = m_visibleicon.size();
 	QFontMetrics fm(option.font);
-	int minheight = qMax(fm.height() * 3 / 2, iconsize.height()) + 2;
+	int minheight = qMax(fm.height() * 3 / 2, ICON_SIZE.height()) + 2;
 	if(size.height() < minheight)
 		size.setHeight(minheight);
 	return size;
@@ -119,16 +132,25 @@ void LayerListDelegate::setModelData(QWidget *editor, QAbstractItemModel *, cons
 	}
 }
 
-void LayerListDelegate::drawOpacityGlyph(const QRectF& rect, QPainter *painter, float value, bool hidden) const
+void LayerListDelegate::drawOpacityGlyph(const QRectF& rect, QPainter *painter, float value, bool hidden, bool censored) const
 {
-	int x = rect.left() + rect.width() / 2 - 8;
-	int y = rect.top() + rect.height() / 2 - 8;
+	const QRect r {
+		int(rect.left() + rect.width() / 2 - ICON_SIZE.width()/2),
+		int(rect.top() + rect.height() / 2 - ICON_SIZE.height()/2),
+		ICON_SIZE.width(),
+		ICON_SIZE.height(),
+	};
+
 	if(hidden) {
-		painter->drawPixmap(x, y, m_hiddenicon);
+		m_hiddenIcon.paint(painter, r);
+
 	} else {
 		painter->save();
 		painter->setOpacity(value);
-		painter->drawPixmap(x, y, m_visibleicon);
+		if(censored)
+			m_censoredIcon.paint(painter, r);
+		else
+			m_visibleIcon.paint(painter, r);
 		painter->restore();
 	}
 }

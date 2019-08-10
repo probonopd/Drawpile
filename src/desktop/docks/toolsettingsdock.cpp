@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2006-2017 Calle Laakkonen
+   Copyright (C) 2006-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 #include "toolwidgets/annotationsettings.h"
 #include "toolwidgets/fillsettings.h"
 #include "toolwidgets/lasersettings.h"
+#include "toolwidgets/zoomsettings.h"
+#include "toolwidgets/inspectorsettings.h"
 
 #include "tools/toolproperties.h"
 
@@ -64,7 +66,7 @@ struct ToolSettings::Private {
 		return pages[currentTool].settings.data();
 	}
 
-	Private(tools::ToolController *ctrl, ToolSettings *dock)
+	Private(tools::ToolController *ctrl)
 		: ctrl(ctrl),
 		  widgetStack(nullptr),
 		  colorDialog(nullptr),
@@ -140,6 +142,16 @@ struct ToolSettings::Private {
 				"selection",
 				QApplication::tr("Selection (Free-Form)")
 			};
+		pages[tools::Tool::ZOOM] = {
+			QSharedPointer<tools::ToolSettings>(new tools::ZoomSettings(ctrl)),
+			"zoom",
+			QApplication::tr("Zoom")
+			};
+		pages[tools::Tool::INSPECTOR] = {
+			QSharedPointer<tools::ToolSettings>(new tools::InspectorSettings(ctrl)),
+			"inspector",
+			QApplication::tr("Inspector")
+			};
 
 		for(int i=0;i<tools::Tool::_LASTTOOL;++i) {
 			if(!toolSettings.contains(pages[i].settings))
@@ -149,7 +161,7 @@ struct ToolSettings::Private {
 };
 
 ToolSettings::ToolSettings(tools::ToolController *ctrl, QWidget *parent)
-	: QDockWidget(parent), d(new Private(ctrl, this))
+	: QDockWidget(parent), d(new Private(ctrl))
 {
 	setStyleSheet(defaultDockStylesheet());
 
@@ -166,6 +178,8 @@ ToolSettings::ToolSettings(tools::ToolController *ctrl, QWidget *parent)
 
 	connect(static_cast<tools::BrushSettings*>(getToolSettingsPage(tools::Tool::FREEHAND)), &tools::BrushSettings::colorChanged,
 			this, &ToolSettings::setForegroundColor);
+	connect(static_cast<tools::BrushSettings*>(getToolSettingsPage(tools::Tool::FREEHAND)), &tools::BrushSettings::subpixelModeChanged,
+			this, &ToolSettings::subpixelModeChanged);
 	connect(static_cast<tools::ColorPickerSettings*>(getToolSettingsPage(tools::Tool::PICKER)), &tools::ColorPickerSettings::colorSelected,
 			this, &ToolSettings::setForegroundColor);
 
@@ -185,9 +199,7 @@ void ToolSettings::readSettings()
 	cfg.beginGroup("tools");
 	cfg.beginGroup("toolset");
 	for(auto ts : d->toolSettings) {
-		cfg.beginGroup(ts->toolType());
-		ts->restoreToolSettings(tools::ToolProperties::load(cfg));
-		cfg.endGroup();
+		ts->restoreToolSettings(tools::ToolProperties::load(cfg, ts->toolType()));
 	}
 	cfg.endGroup();
 	setForegroundColor(cfg.value("color").value<QColor>());
@@ -203,19 +215,14 @@ void ToolSettings::saveSettings()
 
 	cfg.beginGroup("toolset");
 	for(auto ts : d->toolSettings) {
-		tools::ToolProperties props = ts->saveToolSettings();
-		if(!props.isEmpty()) {
-			cfg.beginGroup(ts->toolType());
-			props.save(cfg);
-			cfg.endGroup();
-		}
+		ts->saveToolSettings().save(cfg);
 	}
 }
 
 tools::ToolSettings *ToolSettings::getToolSettingsPage(tools::Tool::Type tool)
 {
-	Q_ASSERT(tool>=0 && tool < tools::Tool::_LASTTOOL);
-	if(tool>=0 && tool<tools::Tool::_LASTTOOL)
+	Q_ASSERT(tool < tools::Tool::_LASTTOOL);
+	if(tool<tools::Tool::_LASTTOOL)
 		return d->pages[tool].settings.data();
 	else
 		return nullptr;
@@ -239,6 +246,10 @@ void ToolSettings::setToolSlot(int idx)
 	// Currently, brush tool is the only tool with tool slots
 	tools::BrushSettings *bs = qobject_cast<tools::BrushSettings*>(d->currentSettings());
 	if(bs) {
+		// Eraser tool is a specialization of the freehand tool locked to the eraser slot
+		if(d->currentTool == tools::Tool::ERASER)
+			return;
+
 		d->previousTool = d->currentTool;
 		d->previousToolSlot = bs->currentBrushSlot();
 		bs->selectBrushSlot(idx);
@@ -307,12 +318,7 @@ void ToolSettings::selectTool(tools::Tool::Type tool)
 
 	emit toolChanged(tool);
 	emit sizeChanged(ts->getSize());
-	updateSubpixelMode();
-}
-
-void ToolSettings::updateSubpixelMode()
-{
-	emit subpixelModeChanged(d->currentSettings()->getSubpixelMode());
+	emit subpixelModeChanged(d->currentSettings()->getSubpixelMode(), d->currentSettings()->isSquare());
 }
 
 tools::Tool::Type ToolSettings::currentTool() const

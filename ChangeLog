@@ -1,7 +1,258 @@
-2017-0?-?? Version 2.0.6
+2019-0?-?? Version 2.1.12
+ * Added Italian translation (contributed by Albano Battistella)
+ * Fixed lockup when opening a layered TIFF file
+ * drawpile-cmd: added support for outputting to stdout
+ * Improved brush preview: different styles are now used for different brush types
+ * Smudging can now be used with all brush shapes
+ * Canvas modifier key shortcuts can now be customized
+ * Added cursors for layer picker, quick adjust, zoom and view rotation modes
+ * Use the same default curve for velocity pressure emulation mode
+ * Fixed tool quick adjustment dragging responsivity
+ * Server: file backed session file naming is now consistent when archive mode is enabled
+ * Added a new shortcut for canvas rotation (shift+ctrl & mousewheel)
+ * Improved selection tool: scale/rotate/shear mode is now toggled by clicking, rather than keyboard modifier
+
+2019-06-23 Version 2.1.11
+ * Fixed that brush color was uninitialized on fresh install
+ * Fixed that using "/me" in a direct message would send it as a public message
+ * Fixed incorrect layer when moving selection if active layer was changed before the move ended
+ * Fixed single pixel shift when moving or copy&pasting freeform selections
+ * Join dialog's session list sort order and column is now remembered
+ * Fixed that read-only listservers were included in the session settings "add listing" buttons
+ * Server: registered user bans are no longer IP bans
+ * Server: op and trusted status is now remembered by user account, rather than username
+ * An error message is now shown if a login message is oversize
+ * Chat box can now be detached into its own window
+ * Client now refuses to autoreset if it knows it isn't fully caught up yet
+
+2019-05-30 Version 2.1.10
+ * Fixed that built-in server settings were being ignored
+ * Updated bundled color widgets to latest upstream version
+ * Fixed that an early undo could clear out the canvas size
+ * Limited reset snapshots to one every 10 seconds
+ * Fixed view jumping when canvas was resized
+ * Fixed extra messages in the beginning of session recordings
+ * Server: fixed that web-admin API HTTP headers were case-sensitive
+ * Application version number is now shown in a tooltip if a session is incompatible
+
+2019-05-19 Version 2.1.9
+ * Fixed that disabled brush slots were still selectable with a keyboard shortcut
+ * Fixed potential crash when logging in to a session
+ * Incompatible sessions are no longer hidden in from the Join dialog
+ * Ctrl+C shortcut now works in the chat box
+ * Added support for read-only list servers
+ * Removed drawpile-srv argument `--secure` (secure mode is now always used if TLS is enabled)
+ * The built-in server is now based on the new Thick Server
+ * Server: added support for real password hashing algorithms
+ * Server: fixed crash when using file sessions (regression)
+ * Fixed duplicate entries in the "Nearby" server list
+ * Very long pinned chat messages no longer force the window to become wider
+
+2019-05-04 Version 2.1.8
+ * Server: fixed potential crash when terminating session
+ * Server: listings are now refreshed in batches instead of individually
+ * Background color alpha can now be set in the "new image" dialog
+ * Adaptive canvas zoom slider: the minimum value is now always the zoom level needed to fit the whole canvas on screen
+ * Drawpile can now download the latest version via the "check for updates" dialog
+ * Fixed formatting in update check dialog when more than one new version is shown
+ * Drag&dropping a link to an image onto the canvas now works again
+ * New more efficient recording index format. Indexes are now generated faster and the files are smaller.
+ * Enabled dark appearance support on macOS
+ * Memory usage optimization: only the minimum amount of session history is now kept in memory
+ * Manual session reset snapshots are now retained separately for one minute.
+ * NSFW sessions are no longer hidden by default
+ * Fixed crash when opening an OpenRaster file with missing stack.xml
+
+2019-04-13 Version 2.1.7
+ * Added Ukranian translation
+ * Fixed navigator not updating correctly on canvas resize
+ * Simplified join dialog (listings from all servers are now shown at the same time)
+
+2019-04-06 Version 2.1.6
+ * Scrollbars are now hidden in fullscreen mode
+ * Regression fix: chat box no longer autoscrolls when not already scrolled to the bottom
+ * Removed default shortcuts for event log and session settings. They can still be assigned custom shortcuts, however.
+ * Added option to share the same color across all tool slots
+ * Fixed lines being drawn across the canvas if session reset occurs while midstroke
+ * New feature: a session can now be reset to an image loaded from file
+ * Full screen mode no longer hides the status bar, instead it is hidden along with the toolbars and docks using the Tab shortcut
+ * Added "pick color from layer" brush mode
+ * Implemented Night Mode
+ * Enabled smooth canvas scaling at certain zoom levels (1-200% or 1-800% when rotated)
+ * Session permissions can now be saved as presets
+
+2019-03-30 Version 2.1.5
+ * Fixed navigator view dragging
+ * Added option to update the navigator in realtime again
+ * Pressing Tab now toggles toolbars on and off
+ * Entering fullscreen mode no longer hides docks and toolbars
+ * Fixed brush preset preview shape rendering
+ * Moved certain buttons back into the status bar
+ * Moved zoom slider back into the status bar
+ * Fixed saving of brush preset changes
+
+2019-03-23 Version 2.1.4
+ * Fixed session list sorting in login dialog
+ * Fixed crash when resizing canvas
+ * Fixed layer access user list going out of sync
+ * Fixed navigator focus rect scaling
+ * Fixed "registered" level permissions not taking effect on login
+ * Server: session and recording directories are now automatically created if missing
+ * Added automatic new release checking
+ * Added filter field to user list (event log)
+ * Reimplemented navigator user cursors
+ * Navigator cursors can now be enabled or disabled independently of the main canvas cursors
+
+2019-03-16 Version 2.1.3
+ * Fixed showing layers in user markers
+ * Fixed crash when changing tools mid-stroke
+ * User cursors and other decorations are no longer shown in the navigator
+ * Navigator is refreshed only at 500ms intervals to reduce CPU load
+ * When the canvas is rotated, the righthand side of the viewport is now indicated in the navigator
+ * Restored 2.1.0 style chatbox and added an option to enable 2.0 style compact mode
+ * Added Inspector tool
+ * Fixed remembering of last open/save folder
+ * Added user list to event log dialog that shows all past users
+ * Server: logged out users can now be banned retroactively
+ * Server: past users are now listed in the admin API
+
+2019-03-09 Version 2.1.2
+ * Increased brush dab max spacing limit to 999% and max brush size to 255px (oversizes accessible via the spinbox)
+ * Fixed crash when using flood fill on an canvas without any layers
+ * Fixed crash when trying to reset after resetting to the very beginning of the history
+ * Clicking on the layer show/hide glyph no longer selects the layer
+ * OpenRaster: the xres and yres values are now preserved
+ * Implemented fixed layers (a generalization of the old background layer feature)
+ * Added Vietnamese translation
+ * Fixed canvas not appearing immediately when login dialog was closed
+ * Fixed chat username line breaking
+ * Fixed Recolor (and other modes) in non-incremental mode
+
+2019-02-17 Version 2.1.1
+ * Fixed OK button related bugs in the login dialog
+ * Added support for ext-auth avatars
+ * Added server configuration option for disabling avatars
+ * Avatar selection box is now only shown if avatars have been configured and server supports custom avatars
+ * Fixed mouse droppings when switching to a smaller brush
+ * Fixed setting autoreset threshold when session size is unlimited
+ * Fixed autoreset sometimes failing to work
+ * Fixed missing layer attributes in reset
+ * Save censored layer flag in OpenRaster files
+ * Fixed ORA file loading (2.1.0 regression)
+ * Add copy merged action (copy visible selection excluding background)
+ * Fixed window autoraising when notification balloon was shown (Windows specific bug)
+ * Fixed onionskin mode settings initialization
+ * Fixed zooming when zoomed outside the usual zoom range. (2.1.0 regression)
+
+2019-02-13 Version 2.1.0
+ * Changed internal pixel format to premultiplied 32 bit RGBA
+ * Added PutTile command and optimized layer initialization
+ * dprectool: added --msg-freq option
+ * Protocol change: replaced ToolChange and PenMove with DrawDabs commands
+ * Replaced "background layer" concept with a tiled canvas background. (Mostly compatible with MyPaint)
+ * Redesigned user list box and chat panel
+ * Autoreset threshold is now adjustable and includes reset image as base size
+ * Individual layers can now be censored
+ * Merged "Find sessions" dialog into the "Join" dialog
+ * Simplified "Host" dialog
+ * Redesigned "Login" dialog
+ * Moved layer hamburger menu to the main menu bar (and expanded it)
+ * Added support for user avatars
+ * Added controls for flipping, rotating and zooming to the navigator dock
+ * New user level: Trusted users
+ * Added tiered feature access controls (guest/registered/trusted/operator)
+ * Added zoom and rotation controls to navigator
+ * Removed sliders from status bar
+ * Added zoom tool
+ * Added zoom/rotation/flip toolbar
+ * Show keyboard shortcuts in toolbar tooltips
+ * Replaced recording status icon with toolbar button
+ * Replaced "new chat message" status icon with toolbar button (red dot indicates new message)
+ * Added template export feature
+ * Added square pixel brush
+ * Replaced Ffmpeg video export with native WebM export
+ * Added private messaging feature
+
+2018-08-14 Version 2.0.11
+ * Server: fixed OP status auto-restoration for users who used the "become operator" feature
+ * Server AppImage: updated libmicrohttpd to version 0.9.59
+ * Fixed crash caused by dragging&dropping a layer that was deleted during the drag operation
+ * Fixed unsetting shortcuts which have a default value
+ * Changed default "session settings" shortcut to F9, to avoid collision with the default (Windows) fullscreen shortcut F11
+ * A nicer set of presets for the brush palette
+ * Sending USR1 signal to drawpile-srv now restarts the internal web-admin server
+
+2018-03-17 Version 2.0.10
+ * Server: history files are now flushed periodically to better protect against dataloss in case of abrupt server termination
+ * Server: blank session files are no longer loaded
+ * Windows: wintab relative pen mode hack must now be explicitly enabled
+ * Removed tablet bug workaround mode (with the improved tablet support, the workaround mode causes more problems than it fixes)
+ * Bugfix: newlayer command now refuses to create a layer with a duplicate ID
+ * Bug workaround: a deopped resetting user is now automatically kicked to prevent reset image from mixing with the normal session content.
+ * Server: added option to automatically purge old DB log messages
+ * Fixed crash when replacing current canvas with a new one while a selection existed
+
+2018-02-25 Version 2.0.9
+ * Minor recording format change: recordings are now prefiltered
+ * Fixed random duplicate frames in exported animations
+ * Added Windows Ink support (from Krita)
+ * Added improved Wintab support (from Krita)
+ * Added improved X11 tablet event handler (from Krita)
+ * Reverted change that updates the color history in real time
+ * Swapping colors with X now remembers the color, even if it hasn't been used yet
+
+2018-02-11 Version 2.0.8
+ * Fixed password remembering on Windows (now uses the same local appdata directory as other settings)
+ * Fixed saved extauth passwords appearing under the server section in the settings dialog
+ * Fixed that a server password would also get saved for extauth
+ * Server: added support for SSL certificate chains and certificate auto-reloading
+ * Fixed reset removing permission settings
+ * Server: web admin API can now be used with socket activation
+ * Server: support 'uid' extauth token field
+ * Better auth user and mod icons
+ * Added a new session option to allow only authenticated users to join (requires server version 2.0.8) 
+ * Chatbox no longer shows "user joined" messages for users already in the session
+ * Platform input method context plugins are now included in the AppImage
+ * macOS: open a new window (if none are open) when application icon is clicked
+
+2018-01-26 Version 2.0.7
+ * Fixed duplicate colors in color history palette
+ * Windows specific: added missing style plugin
+ * Fixed flipbook downscaling (regession)
+ * Flipbook now upscales small images
+ * Bugfix: logging in with ext-auth would disable the field for session password entry
+ * Bugfix: rectangle fill or image pasting worked (locally) on locked layers
+ * Improved selection scaling behavior. Aspect ratio maintaining mode now works, as does flipping and mirroring
+ * The client can now remember server and ext-auth passwords
+ * The state of the "show password protected sessions" checkbox is now remembered
+
+2018-01-22 Version 2.0.6
  * Added selection shear mode
  * Added terminate session action (moderator command)
  * Changing color now immediately updates the color history
+ * Implemented support for external authentication
+ * Flipbook can now be cropped
+ * Added quick layer pick mode (hold shift+control to select a layer)
+ * Added `/status/` endpoint to server web-admin API
+ * Added palette file export & import feature
+ * Added abuse report feature
+ * Added "server title" field to server GUI
+ * Added option to disable tablet eraser detection
+ * Added drawpile-cmd tool
+ * Fixed joining a template session by URL
+ * Fixed color fill on transparent areas
+ * Optimized OpenRaster file saving
+ * Canvas saving is now done in the background
+ * Added option to hide password protected sessions from the join dialog
+ * Bugfix: abort reset if resetting user is deopped
+ * Added new serverside command to cancel session reset
+ * Session reset snapshot is now generated only on demand
+ * Session reset is now cancelled if a snapshot cannot be generated
+ * Bugfix: fixed loss of canvas if user was drawing while reset occurred
+ * Windows installer fix: audio.dll was put into a wrong directory
+ * Recording is now automatically restarted on session reset
+ * Fixed crash when cancelling bezier curve drawing with a right click
+ * Regression fix: snap brush outline to pixel boundaries when using hard edged brush
 
 2017-06-26 Version 2.0.5.1
  * Fixed shortcut conflict that blocked the use of the Enter key

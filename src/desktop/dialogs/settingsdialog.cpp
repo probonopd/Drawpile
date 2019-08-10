@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2007-2017 Calle Laakkonen
+   Copyright (C) 2007-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,17 +21,20 @@
 #include "main.h"
 #include "dialogs/settingsdialog.h"
 #include "dialogs/certificateview.h"
-#include "export/ffmpegexporter.h" // for setting ffmpeg path
+#include "dialogs/avatarimport.h"
 #include "widgets/keysequenceedit.h"
+#include "../scene/canvasviewmodifiers.h"
 #include "utils/icon.h"
 #include "utils/customshortcutmodel.h"
 #include "utils/listservermodel.h"
 #include "utils/listserverdelegate.h"
-#include "utils/netfiles.h"
 #include "utils/settings.h"
+#include "utils/passwordstore.h"
+#include "utils/avatarlistmodel.h"
 #include "parentalcontrols/parentalcontrols.h"
-#include "../shared/util/announcementapi.h"
-#include "../shared/util/passwordhash.h"
+#include "../libshared/listings/announcementapi.h"
+#include "../libshared/util/passwordhash.h"
+#include "../libshared/util/networkaccess.h"
 
 #include "ui_settings.h"
 
@@ -47,7 +50,7 @@
 #include <QStandardPaths>
 #include <QSslCertificate>
 #include <QSortFilterProxyModel>
-#include <QPointer>
+#include <QStandardItemModel>
 
 #include <QDebug>
 
@@ -80,23 +83,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 	m_ui = new Ui_SettingsDialog;
 	m_ui->setupUi(this);
 
-	connect(m_ui->pickFfmpeg, &QToolButton::clicked, [this]() {
-		QString path = QFileDialog::getOpenFileName(this, tr("Set ffmepg path"), m_ui->ffmpegpath->text(),
-#ifdef Q_OS_WIN
-			tr("Executables (%1)").arg("*.exe") + ";;" +
-#endif
-			QApplication::tr("All files (*)")
-		);
-		if(!path.isEmpty())
-			m_ui->ffmpegpath->setText(path);
-	});
-
-	connect(m_ui->pickRecordingFolder, &QToolButton::clicked, [this]() {
-		QString path = QFileDialog::getExistingDirectory(this, tr("Recording folder"), m_ui->recordingFolder->text());
-		if(!path.isEmpty())
-			m_ui->recordingFolder->setText(path);
-	});
-
 	connect(m_ui->notificationVolume, &QSlider::valueChanged, [this](int val) {
 		if(val>0)
 			m_ui->volumeLabel->setText(QString::number(val) + "%");
@@ -121,6 +107,23 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 			}
 		}
 	}
+
+	// Night mode support needs Qt 5.12 on macOS
+#ifdef Q_OS_MAC
+	m_ui->formLayout_2->removeRow(m_ui->nightmode);
+#endif
+
+	// Hide Windows specific stuff on other platforms
+#if !defined(Q_OS_WIN) || !defined(KIS_TABLET)
+	// Can't use this until we no longer support Qt versions older than 5.8:
+	//m_ui->formLayout_2->removeRow(m_ui->windowsink);
+	m_ui->formLayout_2->removeWidget(m_ui->windowsink);
+	m_ui->windowsink->hide();
+#endif
+#if !defined(Q_OS_WIN)
+	m_ui->formLayout_2->removeWidget(m_ui->relativePenModeHack);
+	m_ui->relativePenModeHack->hide();
+#endif
 
 	// Editable shortcuts
 	m_customShortcuts = new CustomShortcutModel(this);
@@ -161,8 +164,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 		i->setData(Qt::UserRole+1, knownHostsDir.absoluteFilePath(filename));
 	}
 
-	QDir trustedHostsDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/trusted-hosts/");
-	QIcon trustedIcon("builtin:trusted.svg");
+	const QDir trustedHostsDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/trusted-hosts/");
+	const QIcon trustedIcon = icon::fromTheme("security-high");
 	for(const QString &filename : trustedHostsDir.entryList(pemfilter, QDir::Files)) {
 		auto *i = new QListWidgetItem(trustedIcon, filename.left(filename.length()-4), m_ui->knownHostList);
 		i->setData(Qt::UserRole, true);
@@ -170,7 +173,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 	}
 
 	// Session listing server list
-	m_listservers = new sessionlisting::ListServerModel(false, this);
+	m_listservers = new sessionlisting::ListServerModel(true, this);
 	m_ui->listserverview->setModel(m_listservers);
 	m_ui->listserverview->setItemDelegate(new sessionlisting::ListServerDelegate(this));
 
@@ -179,6 +182,22 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
 	// Parental controls
 	connect(m_ui->nsfmLock, &QPushButton::clicked, this, &SettingsDialog::lockParentalControls);
+
+	// Stored password list
+	PasswordStore passwords;
+	passwords.load();
+
+	m_ui->passwordListView->setModel(passwords.toStandardItemModel(m_ui->passwordListView));
+	m_ui->passwordListView->expandAll();
+
+	connect(m_ui->passwordListRemove, &QPushButton::clicked, this, &SettingsDialog::removeStoredPassword);
+
+	// Avatar list
+	m_avatars = new AvatarListModel(this);
+	m_ui->avatarList->setModel(m_avatars);
+
+	connect(m_ui->addAvatar, &QPushButton::clicked, this, &SettingsDialog::addAvatar);
+	connect(m_ui->deleteAvatar, &QPushButton::clicked, this, &SettingsDialog::removeSelectedAvatar);
 
 	// Load configuration
 	restoreSettings();
@@ -244,17 +263,25 @@ void SettingsDialog::restoreSettings()
 		}
 	}
 
+#ifndef Q_OS_MAC
+	m_ui->nightmode->setChecked(cfg.value("nightmode", false).toBool());
+#endif
 	m_ui->logfile->setChecked(cfg.value("logfile", true).toBool());
 	m_ui->autosaveInterval->setValue(cfg.value("autosave", 5000).toInt() / 1000);
 
 	m_ui->brushCursorBox->setCurrentIndex(cfg.value("brushcursor").toInt());
 	m_ui->toolToggleShortcut->setChecked(cfg.value("tooltoggle", true).toBool());
+	m_ui->shareBrushSlotColor->setChecked(cfg.value("sharebrushslotcolor", false).toBool());
 
 	cfg.endGroup();
 
 	cfg.beginGroup("settings/input");
+#if defined(Q_OS_WIN) && defined(KIS_TABLET)
+	m_ui->windowsink->setChecked(cfg.value("windowsink", true).toBool());
+	m_ui->relativePenModeHack->setChecked(cfg.value("relativepenhack", false).toBool());
+#endif
 	m_ui->tabletSupport->setChecked(cfg.value("tabletevents", true).toBool());
-	m_ui->tabletBugWorkaround->setChecked(cfg.value("tabletbugs", false).toBool());
+	m_ui->tabletEraser->setChecked(cfg.value("tableteraser", true).toBool());
 #ifdef Q_OS_MAC
 	// Gesture scrolling is always enabled on Macs
 	m_ui->touchscroll->setChecked(true);
@@ -271,20 +298,16 @@ void SettingsDialog::restoreSettings()
 	m_ui->minimumpause->setValue(cfg.value("minimumpause", 0.5).toFloat());
 	m_ui->recordtimestamp->setChecked(cfg.value("recordtimestamp", false).toBool());
 	m_ui->timestampInterval->setValue(cfg.value("timestampinterval", 15).toInt());
-	m_ui->ffmpegpath->setText(FfmpegExporter::getFfmpegPath());
-	m_ui->recordingFolder->setText(utils::settings::recordingFolder());
 	cfg.endGroup();
 
 	cfg.beginGroup("settings/animation");
 	m_ui->onionskinsBelow->setValue(cfg.value("onionskinsbelow", 4).toInt());
 	m_ui->onionskinsAbove->setValue(cfg.value("onionskinsabove", 4).toInt());
 	m_ui->onionskinTint->setChecked(cfg.value("onionskintint", true).toBool());
-	m_ui->backgroundlayer->setChecked(cfg.value("backgroundlayer", true).toBool());
 	cfg.endGroup();
 
 	cfg.beginGroup("settings/server");
 	m_ui->serverport->setValue(cfg.value("port",DRAWPILE_PROTO_DEFAULT_PORT).toInt());
-	m_ui->historylimit->setValue(cfg.value("historylimit", 0).toDouble());
 	m_ui->lowspaceAutoreset->setChecked(cfg.value("autoreset", true).toBool());
 	m_ui->connTimeout->setValue(cfg.value("timeout", 60).toInt());
 #ifdef HAVE_DNSSD
@@ -309,12 +332,28 @@ void SettingsDialog::restoreSettings()
 	}
 	m_ui->nsfmWords->setPlainText(cfg.value("tagwords", parentalcontrols::defaultWordList()).toString());
 	m_ui->autotagNsfm->setChecked(cfg.value("autotag", true).toBool());
+	m_ui->noUncensoring->setChecked(cfg.value("noUncensoring", false).toBool());
 	setParentalControlsLocked(parentalcontrols::isLocked());
 	if(parentalcontrols::isOSActive())
 		m_ui->nsfmLock->setEnabled(false);
 	cfg.endGroup();
 
+	cfg.beginGroup("settings/canvasShortcuts");
+	const auto viewShortcuts = CanvasViewShortcuts::load(cfg);
+	m_ui->colorPickKeys->setModifiers(viewShortcuts.colorPick);
+	m_ui->layerPickKeys->setModifiers(viewShortcuts.layerPick);
+	m_ui->dragRotateKeys->setModifiers(viewShortcuts.dragRotate);
+	m_ui->dragZoomKeys->setModifiers(viewShortcuts.dragZoom);
+	m_ui->dragQuickAdjustKeys->setModifiers(viewShortcuts.dragQuickAdjust);
+	m_ui->scrollRotateKeys->setModifiers(viewShortcuts.scrollRotate);
+	m_ui->scrollZoomKeys->setModifiers(viewShortcuts.scrollZoom);
+	m_ui->scrollQuickAdjustKeys->setModifiers(viewShortcuts.scrollQuickAdjust);
+	m_ui->toolConstrain1Keys->setModifiers(viewShortcuts.toolConstraint1);
+	m_ui->toolConstrain2Keys->setModifiers(viewShortcuts.toolConstraint2);
+	cfg.endGroup();
+
 	m_customShortcuts->loadShortcuts();
+	m_avatars->loadAvatars();
 }
 
 void SettingsDialog::setParentalControlsLocked(bool lock)
@@ -323,6 +362,7 @@ void SettingsDialog::setParentalControlsLocked(bool lock)
 	m_ui->nsfmHide->setDisabled(lock);
 	m_ui->nsfmNoJoin->setDisabled(lock);
 	m_ui->nsfmDisconnect->setDisabled(lock);
+	m_ui->noUncensoring->setDisabled(lock);
 	m_ui->nsfmLock->setText(lock ? tr("Unlock") : tr("Lock"));
 }
 
@@ -340,14 +380,22 @@ void SettingsDialog::rememberSettings()
 
 	// Remember general settings
 	cfg.setValue("settings/language", m_ui->languageBox->currentData());
+#ifndef Q_OS_MAC
+	cfg.setValue("settings/nightmode", m_ui->nightmode->isChecked());
+#endif
 	cfg.setValue("settings/logfile", m_ui->logfile->isChecked());
 	cfg.setValue("settings/autosave", m_ui->autosaveInterval->value() * 1000);
 	cfg.setValue("settings/brushcursor", m_ui->brushCursorBox->currentIndex());
 	cfg.setValue("settings/tooltoggle", m_ui->toolToggleShortcut->isChecked());
+	cfg.setValue("settings/sharebrushslotcolor", m_ui->shareBrushSlotColor->isChecked());
 
 	cfg.beginGroup("settings/input");
+#if defined(Q_OS_WIN) && defined(KIS_TABLET)
+	cfg.setValue("windowsink", m_ui->windowsink->isChecked());
+	cfg.setValue("relativepenhack", m_ui->relativePenModeHack->isChecked());
+#endif
 	cfg.setValue("tabletevents", m_ui->tabletSupport->isChecked());
-	cfg.setValue("tabletbugs", m_ui->tabletBugWorkaround->isChecked());
+	cfg.setValue("tableteraser", m_ui->tabletEraser->isChecked());
 	cfg.setValue("touchscroll", m_ui->touchscroll->isChecked());
 	cfg.setValue("touchpinch", m_ui->touchpinch->isChecked());
 	cfg.setValue("touchtwist", m_ui->touchtwist->isChecked());
@@ -358,15 +406,12 @@ void SettingsDialog::rememberSettings()
 	cfg.setValue("minimumpause", m_ui->minimumpause->value());
 	cfg.setValue("recordtimestamp", m_ui->recordtimestamp->isChecked());
 	cfg.setValue("timestampinterval", m_ui->timestampInterval->value());
-	FfmpegExporter::setFfmpegPath(m_ui->ffmpegpath->text().trimmed());
-	cfg.setValue("folder", m_ui->recordingFolder->text());
 	cfg.endGroup();
 
 	cfg.beginGroup("settings/animation");
 	cfg.setValue("onionskinsbelow", m_ui->onionskinsBelow->value());
 	cfg.setValue("onionskinsabove", m_ui->onionskinsAbove->value());
 	cfg.setValue("onionskintint", m_ui->onionskinTint->isChecked());
-	cfg.setValue("backgroundlayer", m_ui->backgroundlayer->isChecked());
 	cfg.endGroup();
 
 	// Remember server settings
@@ -376,7 +421,6 @@ void SettingsDialog::rememberSettings()
 	else
 		cfg.setValue("port", m_ui->serverport->value());
 
-	cfg.setValue("historylimit", m_ui->historylimit->value());
 	cfg.setValue("autoreset", m_ui->lowspaceAutoreset->isChecked());
 	cfg.setValue("timeout", m_ui->connTimeout->value());
 	cfg.setValue("dnssd", m_ui->dnssd->isChecked());
@@ -389,6 +433,22 @@ void SettingsDialog::rememberSettings()
 	cfg.beginGroup("pc");
 	cfg.setValue("autotag", m_ui->autotagNsfm->isChecked());
 	cfg.setValue("tagwords", m_ui->nsfmWords->toPlainText());
+	cfg.setValue("noUncensoring", m_ui->noUncensoring->isChecked());
+	cfg.endGroup();
+
+	cfg.beginGroup("settings/canvasShortcuts");
+	CanvasViewShortcuts viewShortcuts;
+	viewShortcuts.colorPick = m_ui->colorPickKeys->modifiers();
+	viewShortcuts.layerPick = m_ui->layerPickKeys->modifiers();
+	viewShortcuts.dragRotate = m_ui->dragRotateKeys->modifiers();
+	viewShortcuts.dragZoom = m_ui->dragZoomKeys->modifiers();
+	viewShortcuts.dragQuickAdjust = m_ui->dragQuickAdjustKeys->modifiers();
+	viewShortcuts.scrollRotate = m_ui->scrollRotateKeys->modifiers();
+	viewShortcuts.scrollZoom = m_ui->scrollZoomKeys->modifiers();
+	viewShortcuts.scrollQuickAdjust = m_ui->scrollQuickAdjustKeys->modifiers();
+	viewShortcuts.toolConstraint1 = m_ui->toolConstrain1Keys->modifiers();
+	viewShortcuts.toolConstraint2 = m_ui->toolConstrain2Keys->modifiers();
+	viewShortcuts.save(cfg);
 	cfg.endGroup();
 
 	if(!parentalcontrols::isLocked())
@@ -396,6 +456,7 @@ void SettingsDialog::rememberSettings()
 
 	m_customShortcuts->saveShortcuts();
 	m_listservers->saveServers();
+	m_avatars->commit();
 
 	static_cast<DrawpileApp*>(qApp)->notifySettingsChanged();
 }
@@ -482,7 +543,7 @@ void SettingsDialog::certificateSelectionChanged()
 
 void SettingsDialog::markTrustedCertificates()
 {
-	QIcon trustedIcon("builtin:trusted.svg");
+	const QIcon trustedIcon = icon::fromTheme("security-high");
 	for(QListWidgetItem *item : m_ui->knownHostList->selectedItems()) {
 		if(!item->data(Qt::UserRole).toBool()) {
 			m_trustCerts.append(item->data(Qt::UserRole+1).toString());
@@ -535,7 +596,7 @@ void SettingsDialog::importTrustedCertificate()
 
 	m_importCerts.append(certs.at(0));
 
-	QIcon trustedIcon("builtin:trusted.svg");
+	const QIcon trustedIcon = icon::fromTheme("security-high");
 	auto *i = new QListWidgetItem(trustedIcon, certs.at(0).subjectInfo(QSslCertificate::CommonName).at(0), m_ui->knownHostList);
 	i->setData(Qt::UserRole, true);
 	i->setData(Qt::UserRole+2, path);
@@ -544,44 +605,67 @@ void SettingsDialog::importTrustedCertificate()
 void SettingsDialog::addListingServer()
 {
 	QString urlstr = QInputDialog::getText(this, tr("Add public listing server"), "URL");
-	if(!urlstr.isEmpty()) {
-		QUrl url(urlstr);
-		if(!url.isValid()) {
-			QMessageBox::warning(this, tr("Add public listing server"), tr("Invalid URL!"));
+	if(urlstr.isEmpty())
+		return;
+
+	QUrl url(urlstr);
+	if(!url.isValid()) {
+		QMessageBox::warning(this, tr("Add public listing server"), tr("Invalid URL!"));
+		return;
+	}
+
+	auto *response = sessionlisting::getApiInfo(url);
+	connect(response, &sessionlisting::AnnouncementApiResponse::finished, this, [this, response](const QVariant &result, const QString&, const QString &error) {
+		response->deleteLater();
+		if(!error.isEmpty()) {
+			QMessageBox::warning(this, tr("Add public listing server"), error);
 			return;
 		}
 
-		auto *api = new sessionlisting::AnnouncementApi;
+		const auto info = result.value<sessionlisting::ListServerInfo>();
+		const QString apiUrl = response->apiUrl().toString();
 
-		QPointer<SettingsDialog> self(this);
+		m_listservers->addServer(
+			info.name,
+			apiUrl,
+			info.description,
+			info.readOnly
+			);
 
-		connect(api, &sessionlisting::AnnouncementApi::error, [self, api](QString error) {
-			QMessageBox::warning(self, tr("Add public listing server"), error);
-			api->deleteLater();
-		});
+		if(info.faviconUrl == "drawpile") {
+			m_listservers->setFavicon(
+				apiUrl,
+				QIcon(":/icons/drawpile.png").pixmap(128, 128).toImage()
+				);
 
-		connect(api, &sessionlisting::AnnouncementApi::serverInfo, [self, url, api](sessionlisting::ListServerInfo info) {
-			if(!self.isNull()) {
-				self->m_listservers->addServer(info.name, url.toString(), info.description);
+		} else {
+			const QUrl favicon(info.faviconUrl);
+			if(favicon.isValid()) {
+				auto *filedownload = new networkaccess::FileDownload(this);
 
-				if(info.faviconUrl == "drawpile") {
-					self->m_listservers->setFavicon(url.toString(), QIcon("builtin:drawpile.png").pixmap(128, 128).toImage());
-				} else {
-					QUrl favicon(info.faviconUrl);
-					if(favicon.isValid()) {
-						networkaccess::getImage(favicon, nullptr, [self, url](const QImage &image, const QString &) {
-							if(!self.isNull() && !image.isNull()) {
-								self->m_listservers->setFavicon(url.toString(), image);
-							}
-						});
+				filedownload->setExpectedType("image/");
+
+				connect(filedownload, &networkaccess::FileDownload::finished, this, [this, filedownload, apiUrl](const QString &errorMessage) {
+					filedownload->deleteLater();
+
+					if(!errorMessage.isEmpty()) {
+						qWarning("Couldnt' fetch favicon: %s", qPrintable(errorMessage));
+						return;
 					}
-				}
-			}
-			api->deleteLater();
-		});
 
-		api->getApiInfo(url);
-	}
+					QImage image;
+					if(!image.load(filedownload->file(), nullptr)) {
+						qWarning("Couldn't load favicon.");
+						return;
+					}
+
+					m_listservers->setFavicon(apiUrl, image);
+				});
+
+				filedownload->start(favicon);
+			}
+		}
+	});
 }
 
 void SettingsDialog::removeListingServer()
@@ -630,6 +714,41 @@ void SettingsDialog::lockParentalControls()
 	}
 
 	setParentalControlsLocked(locked);
+}
+
+void SettingsDialog::removeStoredPassword()
+{
+	const QModelIndex idx = m_ui->passwordListView->currentIndex();
+	if(idx.isValid()) {
+		const QString server = idx.data(Qt::UserRole+1).toString();
+		const QString username = idx.data(Qt::UserRole+2).toString();
+		const PasswordStore::Type type = PasswordStore::Type(idx.data(Qt::UserRole+3).toInt());
+
+		PasswordStore passwords;
+		passwords.load();
+
+		if(passwords.forgetPassword(server, username, type)) {
+			QString error;
+			if(!passwords.save(&error)) {
+				m_ui->passwordListMessage->setText(error);
+			} else {
+				delete m_ui->passwordListView->model();
+				m_ui->passwordListView->setModel(passwords.toStandardItemModel(m_ui->passwordListView));
+			}
+		}
+	}
+}
+
+void SettingsDialog::addAvatar()
+{
+	AvatarImport::importAvatar(m_avatars, this);
+}
+
+void SettingsDialog::removeSelectedAvatar()
+{
+	const QModelIndex idx = m_ui->avatarList->currentIndex();
+	if(idx.isValid())
+		m_avatars->removeRow(idx.row());
 }
 
 }

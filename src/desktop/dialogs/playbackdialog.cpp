@@ -1,7 +1,7 @@
 /*
    Drawpile - a collaborative drawing program.
 
-   Copyright (C) 2014-2016 Calle Laakkonen
+   Copyright (C) 2014-2019 Calle Laakkonen
 
    Drawpile is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,15 +21,12 @@
 #include "dialogs/videoexportdialog.h"
 #include "dialogs/recfilterdialog.h"
 
-#include "widgets/filmstrip.h"
-using widgets::Filmstrip;
-
 #include "recording/playbackcontroller.h"
 
 #include "mainwindow.h"
 
-#include "../shared/record/reader.h"
-#include "../shared/net/recording.h"
+#include "../libshared/record/reader.h"
+#include "../libshared/net/recording.h"
 
 #include "ui_playback.h"
 
@@ -89,7 +86,7 @@ PlaybackDialog::PlaybackDialog(canvas::CanvasModel *canvas, recording::Reader *r
 		m_ui->speedLabel->setText(QString("x %1").arg(s, 0, 'f', 1));
 	});
 
-	connect(m_ui->filmStrip, &Filmstrip::doubleClicked, m_ctrl, &PlaybackController::jumpTo);
+	connect(m_ui->filmStrip, &widgets::Filmstrip::doubleClicked, m_ctrl, &PlaybackController::jumpTo);
 
 	connect(m_ctrl, &PlaybackController::indexLoaded, this, &PlaybackDialog::onIndexLoaded);
 	connect(m_ctrl, &PlaybackController::indexLoadError, this, &PlaybackDialog::onIndexLoadError);
@@ -109,19 +106,12 @@ PlaybackDialog::PlaybackDialog(canvas::CanvasModel *canvas, recording::Reader *r
 		m_ui->timeLabel->setText(m_ctrl->currentExportTime());
 	});
 
-	connect(m_ctrl, &PlaybackController::canSaveFrameChanged, [this](bool e) {
-		m_ui->play->setEnabled(e);
-		m_ui->skipBackward->setEnabled(e && m_ctrl->hasIndex());
-		m_ui->skipForward->setEnabled(e);
-		m_ui->stepForward->setEnabled(e);
-		m_ui->markers->setEnabled(e);
-		m_ui->saveFrame->setEnabled(e);
-	});
+	connect(m_ctrl, &PlaybackController::canSaveFrameChanged, m_ui->saveFrame, &QPushButton::setEnabled);
 
 	// Connections for non-indexed recordings. These will be changed when/if the index is loaded
 	m_ui->filmStrip->setLength(reader->filesize());
 	m_ui->filmStrip->setFrames(qMax(1, int(reader->filesize() / 100000)));
-	connect(m_ctrl, &PlaybackController::progressChanged, m_ui->filmStrip, &Filmstrip::setCursor);
+	connect(m_ctrl, &PlaybackController::progressChanged, m_ui->filmStrip, &widgets::Filmstrip::setCursor);
 
 	rebuildMarkerMenu();
 
@@ -144,8 +134,8 @@ void PlaybackDialog::onBuildIndexClicked()
 
 void PlaybackDialog::onIndexLoaded()
 {
-	disconnect(m_ctrl, &PlaybackController::progressChanged, m_ui->filmStrip, &Filmstrip::setCursor);
-	connect(m_ctrl, &PlaybackController::indexPositionChanged,m_ui->filmStrip, &Filmstrip::setCursor);
+	disconnect(m_ctrl, &PlaybackController::progressChanged, m_ui->filmStrip, &widgets::Filmstrip::setCursor);
+	connect(m_ctrl, &PlaybackController::indexPositionChanged,m_ui->filmStrip, &widgets::Filmstrip::setCursor);
 
 	m_ui->filmStrip->setLength(m_ctrl->maxIndexPosition());
 	m_ui->filmStrip->setFrames(m_ctrl->indexThumbnailCount());
@@ -187,6 +177,11 @@ void PlaybackDialog::centerOnParent()
 bool PlaybackDialog::isPlaying() const
 {
 	return m_ctrl->isPlaying();
+}
+
+void PlaybackDialog::setPlaying(bool playing)
+{
+	m_ctrl->setPlaying(playing);
 }
 
 recording::Reader *PlaybackDialog::openRecording(const QString &filename, QWidget *msgboxparent)
