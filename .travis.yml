@@ -22,7 +22,7 @@ script:
   # Compile Drawpile
   - sed -i -e 's/zip.errorString()/QString("ZIP error")/g' "src/libclient/ora/orawriter.cpp"
   - sed -i -e 's/zf.errorString()/QString("ZIP error")/g' "src/libclient/ora/orawriter.cpp"
-  - cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  - cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DKIS_TABLET=on
   - make -j$(nproc)
   - make DESTDIR=appdir -j$(nproc) install ; find appdir/
   - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
